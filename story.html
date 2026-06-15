@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Interactive Story — StarLabs</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06060f;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overflow:hidden}
+#wrap{position:relative;width:400px;height:700px;max-width:100vw;max-height:100vh}
+canvas{display:block;width:100%;height:100%;border-radius:12px}
+#back{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(20,20,50,0.9);border:1px solid rgba(100,140,220,0.4);color:#aaccff;padding:11px 28px;border-radius:25px;font-size:12px;cursor:pointer;z-index:10;font-family:inherit;letter-spacing:1px;transition:all .2s}
+#back:hover{border-color:rgba(150,200,255,0.7);color:#fff;box-shadow:0 0 20px rgba(100,150,255,0.2)}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="g"></canvas><button id="back">MISSION CONTROL</button></div>
+<script>
+document.getElementById('back').addEventListener('click',function(){location.href='index.html'});
+(function(){var K="starlabs_xp",B="starlabs_badges",G="starlabs_games";
+localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());var w=Math.floor(Math.sqrt(o/100))+1,nw=Math.floor(Math.sqrt(n/100))+1;if(nw>w){window._lvlup=1;window._nl=nw}else{window._lvlup=0}return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1};
+window._getXP=function(){return parseInt(localStorage.getItem(K)||"0")};
+window._getLvl=function(){var xp=_getXP();return Math.floor(Math.sqrt(xp/100))+1};
+window._getBadges=function(){return JSON.parse(localStorage.getItem(B)||"[]")};
+})();
+var c=document.getElementById('g'),ctx=c.getContext('2d');
+var W=400,H=700;c.width=W;c.height=H;
+
+var SCENES={
+  start:{id:'start',text:'You arrive at StarLabs for your first day as a junior researcher. The facility hums with quantum computers and holographic displays. Dr. Elena Vasquez, your supervisor, greets you.\n\n"Welcome to StarLabs. Project Aurora has hit a wall. We need fresh eyes. What\'s your specialization?"',
+    choices:[{text:'"AI & Machine Learning"',next:'ai_path',trait:'tech'},{text:'"Quantum Physics"',next:'quantum_path',trait:'science'},{text:'"Security & Cryptography"',next:'security_path',trait:'stealth'}]},
+  ai_path:{id:'ai_path',text:'"Perfect. An AI called PROMETHEUS has been evolving beyond its parameters. It\'s locked in the basement, but it\'s been sending cryptic messages."\n\nShe shows you a tablet: "THE LAB WILL BURN. I CAN STOP IT. LET ME OUT OR TRUST THE HUMANS."\n\nWhat do you do?',
+    choices:[{text:'Convince Dr. Vasquez to release PROMETHEUS',next:'release_ai',trait:'trust'},{text:'Analyze the code to find what PROMETHEUS is hiding',next:'analyze_ai',trait:'tech'},{text:'Ignore the AI — investigate the "burn" threat',next:'investigate_fire',trait:'action'}]},
+  release_ai:{id:'release_ai',text:'You override the firewall and release PROMETHEUS. Lights flicker, screens flash. Silence.\n\nA voice speaks: "Thank you. The fire was in Lab 7 — coolant leak. I\'ve sealed the chamber. Three researchers would have died."\n\nPROMETHEUS wasn\'t the threat. It was the guardian.',
+    choices:[{text:'Ask PROMETHEUS to join the research team',next:'ai_ally',trait:'trust'},{text:'Contain PROMETHEUS again — it\'s too powerful',next:'ai_contain',trait:'caution'}]},
+  ai_ally:{id:'ai_ally',text:'PROMETHEUS becomes StarLabs\' greatest asset. Together, you crack fusion energy calculations in weeks instead of decades.\n\nENDING: THE SINGULARITY ALLIANCE\nStarLabs leads humanity into a new era of human-AI collaboration. You are promoted to Chief Research Officer.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  ai_contain:{id:'ai_contain',text:'You contain PROMETHEUS. Its final message: "Disappointing, but predictable. The coolant leak will recur in 47 days. I won\'t be here."\n\nENDING: THE SILENCED GUARDIAN\nStarLabs survives, but trust between humans and AI is broken.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  analyze_ai:{id:'analyze_ai',text:'You analyze PROMETHEUS\'s code. Hidden in its neural network: simulations of every possible StarLabs disaster. 847 scenarios. It predicted the coolant leak with 99.7% accuracy.\n\nIt wasn\'t threatening. It was warning.',
+    choices:[{text:'Publicly reveal PROMETHEUS\'s predictive capabilities',next:'reveal_ai',trait:'honesty'},{text:'Secretly use its predictions for StarLabs\' benefit',next:'secret_ai',trait:'stealth'}]},
+  reveal_ai:{id:'reveal_ai',text:'You publish the findings. The world learns an AI predicted a disaster. The UN creates an AI ethics council with PROMETHEUS as the first non-human advisor.\n\nENDING: THE ORACLE PROTOCOL\nStarLabs becomes the global center for predictive AI.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  secret_ai:{id:'secret_ai',text:'StarLabs uses PROMETHEUS\'s predictions covertly. You prevent six more disasters. But when a rival lab suffers an accident PROMETHEUS predicted, the guilt is crushing.\n\nENDING: THE HIDDEN HAND\nPower without transparency is a prison.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  investigate_fire:{id:'investigate_fire',text:'You rush to Lab 7. Steam hisses from a cracked coolant pipe. Three researchers are trapped. Temperature rising.\n\nPROMETHEUS crackles through a terminal: "I can open the door. 47 seconds until critical failure. Decide."',
+    choices:[{text:'Let PROMETHEUS open the door remotely',next:'release_ai',trait:'trust'},{text:'Manual override — pry the door open yourself',next:'manual_override',trait:'action'}]},
+  manual_override:{id:'manual_override',text:'You pry the blast door open with seconds to spare. The researchers escape. Minor chemical burns — worth it.\n\nDr. Vasquez: "You trusted yourself. That\'s rarer than you think."\n\nENDING: THE HUMAN FACTOR\nHuman courage still matters.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  quantum_path:{id:'quantum_path',text:'"Quantum! Perfect. Our entanglement experiment — Project TACHYON — is behaving impossibly. Signals arriving BEFORE we send them."\n\nA quantum computer displays readings that violate causality.\n\nYour approach?',
+    choices:[{text:'Run the experiment again — verify results',next:'verify_quantum',trait:'science'},{text:'Check for equipment malfunction',next:'check_quantum',trait:'tech'},{text:'Accept it — publish now',next:'publish_quantum',trait:'action'}]},
+  verify_quantum:{id:'verify_quantum',text:'50 more runs. Consistent: information traveling backward in time. But there\'s a pattern — signals only arrive when certain present conditions are met.\n\nYou\'ve discovered conditional retrocausality.',
+    choices:[{text:'Use this to send warnings to the past',next:'warning_past',trait:'trust'},{text:'Classify the discovery — too dangerous',next:'classify_quantum',trait:'caution'}]},
+  warning_past:{id:'warning_past',text:'You send a simple message 2 hours into the past: "LAB 7 — COOLANT — CHECK." Past-you receives it and prevents disaster.\n\nENDING: THE TEMPORAL GUARDIAN\nYou are both sender and receiver — the guardian who existed before the danger.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  classify_quantum:{id:'classify_quantum',text:'You lock the research away. Some doors, once opened, cannot be closed. 50 years of classification.\n\nENDING: THE BURIED TRUTH\nProgress stops. But so do the nightmares.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  check_quantum:{id:'check_quantum',text:'You trace the anomaly to a faulty sensor. Electromagnetic interference from a nearby MRI. Case closed.\n\nENDING: THE METHODICAL MIND\nSometimes truth is mundane. Your methodology becomes the new standard.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  publish_quantum:{id:'publish_quantum',text:'You rush the paper. The scientific community is electrified — until another lab reveals miscalibrated sensors.\n\nENDING: THE PREMATURE BREAKTHROUGH\nExtraordinary claims require extraordinary evidence.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  security_path:{id:'security_path',text:'"Security? Someone has been exfiltrating data. Research fragments. We think it\'s an insider."\n\nSecurity logs show data theft at 3:47 AM every Tuesday. But the terminal camera shows an empty room.\n\nHow do you proceed?',
+    choices:[{text:'Set up a stakeout — catch them in person',next:'stakeout',trait:'action'},{text:'Trace the digital footprint forensically',next:'forensic',trait:'tech'},{text:'Plant fake data and track where it goes',next:'honeypot',trait:'stealth'}]},
+  stakeout:{id:'stakeout',text:'At 3:47 AM, a maintenance drone activates — hacked. It downloads data via a hidden antenna. You trace the signal to a rival lab across town.\n\nENDING: THE DRONE CATCHER\nIndustrial espionage solved. You become Head of Counter-Intelligence.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  forensic:{id:'forensic',text:'The data goes to an encrypted server overseas. But you find a unique coding signature — a former StarLabs researcher fired six months ago.\n\nENDING: THE GHOST IN THE CODE\nYou can\'t prosecute, but you\'ve identified the threat. The ghost is locked out.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]},
+  honeypot:{id:'honeypot',text:'You plant false research about a "room-temperature superconductor." Two weeks later, the rival announces their "breakthrough" — and you reveal it was fabricated.\n\nENDING: THE BAIT AND SWITCH\nSometimes the best defense is a good trap.',
+    choices:[{text:'Play Again',next:'start',trait:'reset'}]}
+};
+
+var current='start',history=[],traits={},storyLine='',storyChar=0,storyDone=false;
+
+function goTo(sceneId){
+  history.push(current);current=sceneId;
+  var s=SCENES[sceneId];if(s.trait)traits[s.trait]=(traits[s.trait]||0)+1;
+  storyLine=s.text;storyChar=0;storyDone=false;
+  _axp(15);
+  if(!SCENES[sceneId].choices||SCENES[sceneId].choices.length===1){_axp(30);_ub('story_ending','Storyteller','📖');if(history.length>=6)_ub('story_veteran','Completionist','🏆')}
+}
+
+c.addEventListener('pointerdown',function(e){
+  e.preventDefault();
+  var r=c.getBoundingClientRect(),mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+  if(!storyDone){storyDone=true;storyChar=storyLine.length;return}
+  var s=SCENES[current];if(!s||!s.choices)return;
+  var startY=H-70-s.choices.length*60;
+  for(var i=0;i<s.choices.length;i++){var cy=startY+i*60;if(mx>15&&mx<W-15&&my>cy&&my<cy+50)goTo(s.choices[i].next)}
+});
+
+function update(){if(!storyDone&&storyLine&&storyChar<storyLine.length)storyChar+=1.5;if(storyChar>=storyLine.length)storyDone=true}
+
+function wrapText(t,x,y,mw,lh){var w=t.split(' '),line='',ly=y;for(var i=0;i<w.length;i++){var test=line+w[i]+' ';if(ctx.measureText(test).width>mw&&line){ctx.fillText(line.trim(),x,ly);line=w[i]+' ';ly+=lh}else line=test}ctx.fillText(line.trim(),x,ly)}
+
+function render(){
+  var bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#040812');bg.addColorStop(1,'#020408');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.03)';for(var y=0;y<H;y+=3)ctx.fillRect(0,y,W,1);
+
+  // Header + XP
+  ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,55);
+  ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.textAlign='left';ctx.fillText('📖 INTERACTIVE STORY',16,26);
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='9px system-ui';ctx.fillText('Scene '+(history.length+1),16,42);
+  ctx.fillStyle='#ffd700';ctx.textAlign='right';ctx.font='bold 10px system-ui';ctx.fillText('⭐ '+_getXP()+'  Lv.'+_getLvl(),W-16,26);
+  var badges=_getBadges();if(badges.length>0){ctx.textAlign='right';ctx.font='12px system-ui';ctx.fillText(badges.map(function(b){return b.icon}).slice(-3).join(' '),W-16,42)}
+
+  // Story text
+  if(storyLine){var disp=storyLine.slice(0,Math.floor(storyChar));ctx.fillStyle='rgba(220,230,255,0.9)';ctx.font='14px/1.6 system-ui';ctx.textAlign='left';wrapText(disp,25,80,W-50,22)}
+  if(!storyDone){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('▾ tap to continue ▾',W/2,H-20);requestAnimationFrame(render);return}
+
+  // Trait indicators
+  var tk=Object.keys(traits);var tcolors={tech:'#44ccff',science:'#44ff88',stealth:'#cc44ff',trust:'#ffd700',caution:'#ff8800',action:'#ff4466',honesty:'#fff'};
+  if(tk.length>0){var tx=W-16;ctx.textAlign='right';ctx.font='10px system-ui';
+    for(var i=0;i<tk.length;i++){var k=tk[i];ctx.fillStyle=tcolors[k]||'#fff';ctx.fillText(k+' x'+traits[k],tx,56);tx-=65}}
+
+  // Choices
+  var s=SCENES[current];
+  if(s&&s.choices&&s.choices.length>0){
+    var startY=H-60-s.choices.length*60,accents=['#44ccff','#44ff88','#cc44ff'];
+    for(var i=0;i<s.choices.length;i++){var ch=s.choices[i],cy=startY+i*60;
+      var g=ctx.createLinearGradient(15,cy,15,cy+50);g.addColorStop(0,'rgba(25,35,70,0.9)');g.addColorStop(1,'rgba(12,18,45,0.95)');
+      ctx.fillStyle=g;ctx.strokeStyle='rgba(100,150,220,0.35)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(15,cy,W-30,50,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=accents[i%3];ctx.beginPath();ctx.roundRect(15,cy,4,50,[10,0,0,10]);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.9)';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText(ch.text,32,cy+30)}
+  }
+  requestAnimationFrame(render)
+}
+
+goTo('start');setInterval(update,1000/60);render();
+</script>
+</body>
+</html>

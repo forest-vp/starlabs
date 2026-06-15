@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>StarLabs — Login</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#030611;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.login-box{position:relative;z-index:1;width:380px;max-width:95vw;padding:40px 30px;background:rgba(10,15,40,0.85);border:1px solid rgba(100,140,220,0.25);border-radius:20px;backdrop-filter:blur(20px);text-align:center}
+.logo{width:70px;height:70px;margin:0 auto 12px;background:linear-gradient(135deg,#ffd700,#ff8c00);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 0 10px #ffd700)}50%{filter:drop-shadow(0 0 25px #ff8c00)}}
+h1{font-size:28px;font-weight:900;background:linear-gradient(135deg,#fff,#88bbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:4px}
+.sub{color:rgba(150,190,240,0.5);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:24px}
+.input-group{margin-bottom:16px;text-align:left}
+.input-group label{display:block;color:rgba(180,200,240,0.6);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.input-group input{width:100%;padding:12px 16px;background:rgba(5,10,30,0.8);border:1px solid rgba(100,140,220,0.3);border-radius:12px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:all .2s}
+.input-group input:focus{border-color:rgba(150,200,255,0.6);box-shadow:0 0 15px rgba(100,150,255,0.1)}
+.input-group input::placeholder{color:rgba(150,180,220,0.25)}
+.role-select{display:flex;gap:8px;margin:16px 0}
+.role-opt{flex:1;padding:10px 8px;background:rgba(5,10,30,0.6);border:1px solid rgba(100,140,220,0.2);border-radius:12px;color:rgba(200,220,255,0.5);font-size:11px;cursor:pointer;transition:all .2s;text-align:center;font-family:inherit}
+.role-opt:hover,.role-opt.sel{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,0.08)}
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:14px;color:#000;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;font-family:inherit;margin-top:8px}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(255,215,0,0.3)}
+.btn.sec{background:transparent;border:1px solid rgba(100,140,220,0.3);color:rgba(200,220,255,0.6);margin-top:4px;font-size:12px;padding:10px}
+.btn.sec:hover{box-shadow:none;color:#fff;border-color:rgba(150,200,255,0.6)}
+.error{color:#ff4466;font-size:11px;margin-top:8px;display:none}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:rgba(255,255,255,0.2);font-size:10px;letter-spacing:2px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(100,140,220,0.2)}
+.existing-users{margin-top:12px}
+.existing-users select{width:100%;padding:10px;background:rgba(5,10,30,0.8);border:1px solid rgba(100,140,220,0.3);border-radius:12px;color:#fff;font-size:13px;font-family:inherit;outline:none;cursor:pointer}
+.existing-users select option{background:#0a0f28;color:#fff}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="login-box">
+  <div class="logo"></div>
+  <h1>STARLABS</h1>
+  <div class="sub">Secure Access Portal</div>
+
+  <div id="formMode">
+    <div class="input-group"><label>Codename</label><input type="text" id="username" placeholder="e.g. nova_researcher" maxlength="20" autocomplete="off"></div>
+    <div class="input-group"><label>Display Name</label><input type="text" id="displayName" placeholder="Your name" maxlength="24"></div>
+
+    <label style="color:rgba(180,200,240,0.5);font-size:10px;letter-spacing:2px;text-transform:uppercase;display:block;text-align:left;margin-bottom:6px">Division</label>
+    <div class="role-select" id="roleSelect">
+      <div class="role-opt" data-role="Researcher">🔬<br>Research</div>
+      <div class="role-opt" data-role="Engineer">⚙️<br>Engineer</div>
+      <div class="role-opt" data-role="Operative">🕵️<br>Security</div>
+    </div>
+
+    <div class="error" id="error">Please fill all fields</div>
+    <button class="btn" id="loginBtn">ENTER STARLABS</button>
+  </div>
+
+  <div class="divider">EXISTING PERSONNEL</div>
+  <div class="existing-users">
+    <select id="userSelect" onchange="quickLogin()"><option value="">— Select profile —</option></select>
+  </div>
+</div>
+
+<script>
+var stars=[];var sc=document.getElementById('stars'),sctx=sc.getContext('2d');
+sc.width=window.innerWidth;sc.height=window.innerHeight;
+for(var i=0;i<100;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.5+.3,s:.1+Math.random()*.4});
+function ds(){sctx.clearRect(0,0,sc.width,sc.height);stars.forEach(function(s){s.y+=s.s;if(s.y>sc.height){s.y=0;s.x=Math.random()*sc.width}sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,Math.PI*2);sctx.fillStyle='rgba(180,200,255,'+(.2+s.s*.3)+')';sctx.fill()});requestAnimationFrame(ds)}ds();
+
+var selectedRole='Researcher';
+document.querySelectorAll('.role-opt').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.role-opt').forEach(function(e){e.classList.remove('sel')});this.classList.add('sel');selectedRole=this.dataset.role})});
+document.querySelector('.role-opt').classList.add('sel');
+
+function loadUsers(){var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');var sel=document.getElementById('userSelect');sel.innerHTML='<option value="">— Select profile —</option>';users.forEach(function(u,i){sel.innerHTML+='<option value="'+i+'">'+u.icon+' '+u.displayName+' ('+u.username+') — '+u.role+'</option>'})}
+loadUsers();
+
+function quickLogin(){var idx=document.getElementById('userSelect').value;if(idx==='')return;var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');var u=users[parseInt(idx)];loginUser(u)}
+
+document.getElementById('loginBtn').addEventListener('click',function(){
+  var un=document.getElementById('username').value.trim(),dn=document.getElementById('displayName').value.trim();
+  if(!un||!dn){document.getElementById('error').style.display='block';return}
+  document.getElementById('error').style.display='none';
+  var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');
+  var existing=users.find(function(u){return u.username===un});
+  if(existing){loginUser(existing);return}
+  var icons=['🔬','⚙️','🕵️','🚀','💻','🧬'];
+  var user={username:un,displayName:dn,role:selectedRole,icon:icons[Math.floor(Math.random()*icons.length)],created:Date.now()};
+  users.push(user);localStorage.setItem('starlabs_users',JSON.stringify(users));
+  loginUser(user)
+});
+
+function loginUser(u){localStorage.setItem('starlabs_current_user',JSON.stringify(u));location.href='index.html'}
+
+// Skip button if already logged in
+if(localStorage.getItem('starlabs_current_user')){var u=JSON.parse(localStorage.getItem('starlabs_current_user'));document.getElementById('username').value=u.username;document.getElementById('displayName').value=u.displayName}
+</script>
+</body>
+</html>

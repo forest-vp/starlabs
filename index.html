@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>StarLabs — Mission Control</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#030611;display:flex;justify-content:center;align-items:center;
+    min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
+  }
+  #stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .wrap{position:relative;z-index:1;width:420px;max-width:100vw;padding:20px 16px 40px}
+
+  /* Header */
+  .logo-area{text-align:center;margin-bottom:8px;position:relative}
+  .logo-ring{width:80px;height:80px;margin:0 auto 8px;position:relative}
+  .logo-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;
+    background:conic-gradient(from 0deg,#ffd700,#ff8c00,#ffd700,#ff8c00,#ffd700);
+    animation:spin-ring 4s linear infinite;filter:blur(2px)}
+  .logo-ring::after{content:'';position:absolute;inset:2px;border-radius:50%;background:#030611}
+  .logo-star{position:absolute;inset:12px;z-index:1;
+    background:linear-gradient(135deg,#ffd700,#ff8c00);
+    clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    animation:pulse-star 2s ease-in-out infinite}
+  @keyframes spin-ring{to{transform:rotate(360deg)}}
+  @keyframes pulse-star{0%,100%{filter:drop-shadow(0 0 10px #ffd700);transform:scale(1)}50%{filter:drop-shadow(0 0 25px #ff8c00);transform:scale(1.1)}}
+  h1{font-size:38px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#88bbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px}
+  .subtitle{color:rgba(150,190,240,0.6);font-size:11px;letter-spacing:8px;text-transform:uppercase}
+
+  /* XP Bar */
+  .xp-section{background:rgba(10,15,40,0.8);border:1px solid rgba(100,140,220,0.25);border-radius:16px;padding:14px 18px;margin:14px 0}
+  .xp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .xp-lvl{font-size:28px;font-weight:900;color:#ffd700;text-shadow:0 0 15px rgba(255,215,0,0.4)}
+  .xp-info{text-align:right}
+  .xp-title{color:#fff;font-size:13px;font-weight:700}.xp-num{color:rgba(200,220,255,0.6);font-size:10px}
+  .xp-bar-outer{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+  .xp-bar-inner{height:100%;background:linear-gradient(90deg,#ff8c00,#ffd700,#ff8c00);border-radius:4px;transition:width .5s;box-shadow:0 0 12px rgba(255,215,0,0.4)}
+  .xp-label{display:flex;justify-content:space-between;margin-top:4px;color:rgba(255,255,255,0.35);font-size:9px}
+
+  /* Badges */
+  .badge-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .badge-pill{display:flex;align-items:center;gap:5px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:4px 10px;font-size:10px;color:rgba(255,215,0,0.8)}
+  .badge-pill.locked{opacity:0.3;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3)}
+  .badge-pill .bicon{font-size:14px}
+
+  /* Stats row */
+  .stats-row{display:flex;gap:8px;margin-bottom:12px}
+  .stat-box{flex:1;background:rgba(10,15,40,0.6);border:1px solid rgba(100,140,220,0.15);border-radius:12px;padding:10px;text-align:center}
+  .stat-val{font-size:20px;font-weight:900;color:#fff}
+  .stat-lbl{font-size:9px;color:rgba(200,220,255,0.4);text-transform:uppercase;letter-spacing:1px}
+
+  /* Game Cards */
+  .section-title{color:rgba(200,220,255,0.5);font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:16px 0 10px}
+  .games-grid{display:flex;flex-direction:column;gap:10px}
+  .game-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(15,20,50,0.9),rgba(8,10,28,0.95));border:1px solid rgba(100,130,200,0.15);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-decoration:none;color:inherit;position:relative;overflow:hidden}
+  .game-card:hover,.game-card:active{border-color:rgba(150,180,255,0.5);transform:translateY(-1px);box-shadow:0 6px 24px rgba(80,120,255,0.12)}
+  .game-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0 3px 3px 0}
+  .card-icon{width:48px;height:48px;min-width:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .card-info{flex:1;min-width:0}
+  .card-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px}
+  .card-desc{font-size:11px;color:rgba(170,190,220,0.45);line-height:1.3}
+  .card-meta{display:flex;align-items:center;gap:6px;margin-top:4px}
+  .card-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:.5px;text-transform:uppercase}
+  .card-xp{font-size:9px;color:rgba(255,215,0,0.5)}
+
+  /* Game accent colors */
+  .c-balance::after{background:linear-gradient(to bottom,#ff8c42,#ffd700)}
+  .c-balance .card-icon{background:rgba(255,140,66,0.12);color:#ff8c42}
+  .c-balance .card-badge{background:rgba(255,140,66,0.12);color:#ff8c42}
+  .c-bugs::after{background:linear-gradient(to bottom,#ff4466,#ff6688)}
+  .c-bugs .card-icon{background:rgba(255,68,102,0.12);color:#ff4466}
+  .c-bugs .card-badge{background:rgba(255,68,102,0.12);color:#ff4466}
+  .c-stream::after{background:linear-gradient(to bottom,#44ccff,#6688ff)}
+  .c-stream .card-icon{background:rgba(68,204,255,0.12);color:#44ccff}
+  .c-stream .card-badge{background:rgba(68,204,255,0.12);color:#44ccff}
+  .c-puzzle::after{background:linear-gradient(to bottom,#ffd700,#ffaa00)}
+  .c-puzzle .card-icon{background:rgba(255,215,0,0.12);color:#ffd700}
+  .c-puzzle .card-badge{background:rgba(255,215,0,0.12);color:#ffd700}
+  .c-story::after{background:linear-gradient(to bottom,#cc44ff,#ff66cc)}
+  .c-story .card-icon{background:rgba(204,68,255,0.12);color:#cc44ff}
+  .c-story .card-badge{background:rgba(204,68,255,0.12);color:#cc44ff}
+  .c-sim::after{background:linear-gradient(to bottom,#44ff88,#22cc66)}
+  .c-sim .card-icon{background:rgba(68,255,136,0.12);color:#44ff88}
+  .c-sim .card-badge{background:rgba(68,255,136,0.12);color:#44ff88}
+  .c-learn::after{background:linear-gradient(to bottom,#ff8800,#ffaa44)}
+  .c-learn .card-icon{background:rgba(255,136,0,0.12);color:#ff8800}
+  .c-learn .card-badge{background:rgba(255,136,0,0.12);color:#ff8800}
+  .c-scavenger::after{background:linear-gradient(to bottom,#ff4488,#ff6688)}
+  .c-scavenger .card-icon{background:rgba(255,68,136,0.12);color:#ff4488}
+  .c-scavenger .card-badge{background:rgba(255,68,136,0.12);color:#ff4488}
+
+  /* Notification toast */
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;padding:12px 24px;border-radius:30px;font-size:13px;font-weight:700;pointer-events:none;transition:all .4s;opacity:0}
+  .toast.show{opacity:1;top:30px}
+  .toast.lvl{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;box-shadow:0 8px 30px rgba(255,215,0,0.4)}
+  .toast.badge{background:linear-gradient(135deg,#cc44ff,#ff66cc);color:#fff;box-shadow:0 8px 30px rgba(204,68,255,0.4)}
+
+  .footer{text-align:center;margin-top:24px;color:rgba(100,140,200,0.2);font-size:10px;letter-spacing:2px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .game-card:nth-child(1){animation:fadeUp .4s ease-out}
+  .game-card:nth-child(2){animation:fadeUp .4s .04s ease-out both}
+  .game-card:nth-child(3){animation:fadeUp .4s .08s ease-out both}
+  .game-card:nth-child(4){animation:fadeUp .4s .12s ease-out both}
+  .game-card:nth-child(5){animation:fadeUp .4s .16s ease-out both}
+  .game-card:nth-child(6){animation:fadeUp .4s .20s ease-out both}
+  .game-card:nth-child(7){animation:fadeUp .4s .24s ease-out both}
+  .game-card:nth-child(8){animation:fadeUp .4s .28s ease-out both}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ring"><div class="logo-star"></div></div>
+    <h1>STARLABS</h1>
+    <div class="subtitle">Mission Control</div>
+  </div>
+
+  <div class="xp-section" id="xpSection">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" id="userProfile">
+    <div style="font-size:32px" id="userIcon">🚀</div>
+    <div>
+      <div style="color:#fff;font-weight:700;font-size:14px" id="userName">Agent</div>
+      <div style="color:rgba(180,200,240,0.5);font-size:10px" id="userRole">Researcher</div>
+    </div>
+  </div>
+    <div class="xp-top">
+      <div class="xp-lvl" id="lvlNum">1</div>
+      <div class="xp-info">
+        <div class="xp-title">RESEARCHER RANK</div>
+        <div class="xp-num" id="xpNum">0 XP</div>
+      </div>
+    </div>
+    <div class="xp-bar-outer"><div class="xp-bar-inner" id="xpBar" style="width:0%"></div></div>
+    <div class="xp-label"><span id="xpCur">0</span><span id="xpNext">100 XP</span></div>
+    <div class="badge-row" id="badgeRow"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-val" id="statGames">0</div><div class="stat-lbl">Games Played</div></div>
+    <div class="stat-box"><div class="stat-val" id="statBadges">0</div><div class="stat-lbl">Badges</div></div>
+    <div class="stat-box"><div class="stat-val" id="statStreak">0</div><div class="stat-lbl">Day Streak</div></div>
+  </div>
+
+  <div class="section-title">🎯 Active Missions</div>
+  <div class="games-grid" id="gamesGrid"></div>
+
+  <div class="footer">STARLABS ● v4.0 ● <a href="login.html" style="color:inherit;text-decoration:none">LOGOUT</a></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STARLABS PROGRESSION ENGINE (shared)
+// ═══════════════════════════════════════
+const XP_KEY='starlabs_xp',BADGES_KEY='starlabs_badges',GAMES_KEY='starlabs_games',STREAK_KEY='starlabs_streak';
+function getXP(){return parseInt(localStorage.getItem(XP_KEY)||'0')}
+function getLevel(xp){return Math.floor(Math.sqrt(xp/100))+1}
+function getXPForLevel(lvl){return(lvl-1)*(lvl-1)*100}
+function xpProgress(xp){const l=getLevel(xp);const c=getXPForLevel(l);const n=getXPForLevel(l+1);return{level:l,cur:xp-c,need:n-c,pct:Math.min(100,Math.round((xp-c)/(n-c)*100))}}
+function addXP(amt){
+  const old=parseInt(localStorage.getItem(XP_KEY)||'0');
+  const was=getLevel(old);
+  const nw=old+amt;
+  localStorage.setItem(XP_KEY,nw.toString());
+  const now=getLevel(nw);
+  if(now>was){return{leveledUp:true,newLevel:now,oldLevel:was,xp:nw}}
+  return{leveledUp:false,xp:nw}
+}
+function getBadges(){try{return JSON.parse(localStorage.getItem(BADGES_KEY)||'[]')}catch(e){return[]}}
+function unlockBadge(id,name,icon){
+  const b=getBadges();
+  if(b.find(x=>x.id===id))return false;
+  b.push({id,name,icon,date:Date.now()});
+  localStorage.setItem(BADGES_KEY,JSON.stringify(b));
+  return true
+}
+function getGamesPlayed(){return parseInt(localStorage.getItem(GAMES_KEY)||'0')}
+function recordGamePlayed(){localStorage.setItem(GAMES_KEY,(getGamesPlayed()+1).toString())}
+function getStreak(){try{const s=JSON.parse(localStorage.getItem(STREAK_KEY)||'{"date":"","count":0}');const today=new Date().toDateString();const yest=new Date(Date.now()-86400000).toDateString();if(s.date===today)return s;if(s.date===yest)return{date:today,count:s.count+1};return{date:today,count:1}}catch(e){return{date:new Date().toDateString(),count:1}}}
+function saveStreak(s){localStorage.setItem(STREAK_KEY,JSON.stringify(s))}
+
+// Toast
+const toast=document.getElementById('toast');
+function showToast(msg,type='lvl'){toast.textContent=msg;toast.className='toast '+type+' show';setTimeout(()=>toast.className='toast',2500)}
+
+// ═══════════════════════════════════════
+// GAME REGISTRY
+// ═══════════════════════════════════════
+const GAMES=[
+  {id:'balance',name:'Project Balance',desc:'Drop team blocks onto the platform — keep the seesaw balanced.',file:'balance.html',icon:'⚖️',badge:'Physics',cls:'c-balance',xpPerPlay:25},
+  {id:'bugs',name:'Bug Squash',desc:'Bugs are invading the server! Tap them before they crash the system.',file:'bugsquash.html',icon:'🐛',badge:'Arcade',cls:'c-bugs',xpPerPlay:30},
+  {id:'stream',name:'Data Stream',desc:'Catch falling data packets. Dodge the malware. Keep the pipeline flowing.',file:'datastream.html',icon:'📡',badge:'Reflex',cls:'c-stream',xpPerPlay:20},
+  {id:'puzzle',name:'Puzzle Adventure',desc:'Solve logic puzzles, crack codes, unlock classified research.',file:'puzzle.html',icon:'🧩',badge:'Puzzle',cls:'c-puzzle',xpPerPlay:35},
+  {id:'story',name:'Interactive Story',desc:'Your choices shape the fate of StarLabs. Multiple endings await.',file:'story.html',icon:'📖',badge:'Narrative',cls:'c-story',xpPerPlay:30},
+  {id:'sim',name:'Facility Simulator',desc:'Manage StarLabs resources — power, staff, research projects.',file:'sim.html',icon:'🏭',badge:'Strategy',cls:'c-sim',xpPerPlay:40},
+  {id:'learn',name:'StarLabs Academy',desc:'Learn programming, AI, cybersecurity. Adaptive quizzes.',file:'learn.html',icon:'🎓',badge:'Education',cls:'c-learn',xpPerPlay:25},
+  {id:'scavenger',name:'AR Scavenger Hunt',desc:'Navigate the facility. Find hidden items before time runs out.',file:'scavenger.html',icon:'🔍',badge:'Exploration',cls:'c-scavenger',xpPerPlay:35},
+];
+
+// ═══════════════════════════════════════
+// RENDER MAIN MENU
+// ═══════════════════════════════════════
+function renderMenu(){
+  const xp=getXP();const p=xpProgress(xp);
+  document.getElementById('lvlNum').textContent=p.level;
+  document.getElementById('xpNum').textContent=xp.toLocaleString()+' XP';
+  document.getElementById('xpBar').style.width=p.pct+'%';
+  document.getElementById('xpCur').textContent=p.cur;
+  document.getElementById('xpNext').textContent=p.need+' XP';
+
+  // Stats
+  document.getElementById('statGames').textContent=getGamesPlayed();
+  const badges=getBadges();
+  document.getElementById('statBadges').textContent=badges.length;
+  const s=getStreak();saveStreak(s);
+  document.getElementById('statStreak').textContent=s.count;
+
+  // Badges
+  const br=document.getElementById('badgeRow');br.innerHTML='';
+  if(badges.length===0){br.innerHTML='<span style="font-size:10px;color:rgba(255,255,255,0.2)">Complete missions to earn badges</span>'}
+  else badges.slice(-8).reverse().forEach(b=>{const d=document.createElement('span');d.className='badge-pill';d.innerHTML=`<span class="bicon">${b.icon}</span>${b.name}`;br.appendChild(d)});
+
+  // Game cards
+  const grid=document.getElementById('gamesGrid');grid.innerHTML='';
+  GAMES.forEach(g=>{
+    const a=document.createElement('a');a.className='game-card '+g.cls;a.href=g.file;
+    a.innerHTML=`<div class="card-icon">${g.icon}</div><div class="card-info"><div class="card-title">${g.name}</div><div class="card-desc">${g.desc}</div><div class="card-meta"><span class="card-badge">${g.badge}</span><span class="card-xp">+${g.xpPerPlay} XP</span></div></div>`;
+    grid.appendChild(a);
+  });
+}
+
+// Auto-award badges based on stats
+function checkAutoBadges(){
+  const xp=getXP();const lvl=getLevel(xp);const badges=getBadges();const gp=getGamesPlayed();
+  const awards=[
+    {id:'welcome',name:'Recruit',icon:'🆕',cond:()=>gp>=1},
+    {id:'lvl5',name:'Researcher',icon:'🔬',cond:()=>lvl>=5},
+    {id:'lvl10',name:'Scientist',icon:'🥼',cond:()=>lvl>=10},
+    {id:'lvl20',name:'Senior Fellow',icon:'🏅',cond:()=>lvl>=20},
+    {id:'lvl30',name:'Lab Director',icon:'👑',cond:()=>lvl>=30},
+    {id:'gamer',name:'Dedicated',icon:'💪',cond:()=>gp>=10},
+    {id:'veteran',name:'Veteran',icon:'🎖️',cond:()=>gp>=50},
+    {id:'xp500',name:'500 Club',icon:'⭐',cond:()=>xp>=500},
+    {id:'xp2k',name:'2K Club',icon:'🌟',cond:()=>xp>=2000},
+    {id:'xp10k',name:'Elite',icon:'💎',cond:()=>xp>=10000},
+  ];
+  awards.forEach(a=>{if(a.cond()&&unlockBadge(a.id,a.name,a.icon))showToast(`${a.icon} Badge: ${a.name}`,'badge')});
+}
+
+renderMenu();checkAutoBadges();
+
+// Load user profile
+var userData=JSON.parse(localStorage.getItem("starlabs_current_user")||"null");
+if(!userData) location.href="login.html";
+else {
+  document.getElementById("userIcon").textContent=userData.icon||"🚀";
+  document.getElementById("userName").textContent=userData.displayName||"Agent";
+  document.getElementById("userRole").textContent=userData.role||"Researcher";
+}
+
+// ═══════════════════════════════════════
+// STARFIELD (parallax layers)
+// ═══════════════════════════════════════
+const sc=document.getElementById('stars'),sctx=sc.getContext('2d');
+sc.width=window.innerWidth;sc.height=window.innerHeight;
+const stars=[];
+for(let l=0;l<3;l++)for(let i=0;i<50+l*35;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*(1+l*.6)+.4,speed:.1+l*.25,opacity:.15+l*.15,layer:l});
+
+function drawStars(){
+  sctx.clearRect(0,0,sc.width,sc.height);
+  stars.forEach(s=>{s.y+=s.speed;if(s.y>sc.height){s.y=0;s.x=Math.random()*sc.width}sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,Math.PI*2);sctx.fillStyle=`rgba(${s.layer<2?'180,200,255':'220,230,255'},${s.opacity})`;sctx.fill()});
+  requestAnimationFrame(drawStars)
+}
+drawStars();
+window.addEventListener('resize',()=>{sc.width=window.innerWidth;sc.height=window.innerHeight});
+
+// Listen for XP updates from games
+window.addEventListener('storage',e=>{if(e.key===XP_KEY||e.key===BADGES_KEY||e.key===GAMES_KEY){renderMenu();checkAutoBadges()}});
+</script>
+</body>
+</html>

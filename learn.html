@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>StarLabs Academy — Learn</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#06060f; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:'Segoe UI',system-ui,sans-serif; touch-action:none; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; overflow:hidden; }
+  #wrap { position:relative; width:400px; height:700px; max-width:100vw; max-height:100vh; }
+  canvas { display:block; width:100%; height:100%; border-radius:12px; }
+  #back { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: rgba(20,20,50,0.9); border: 1px solid rgba(100,140,220,0.4); color: #aaccff; padding: 11px 28px; border-radius: 25px; font-size: 12px; cursor: pointer; z-index: 10; font-family: inherit; letter-spacing: 1px; transition: all 0.2s; }
+  #back:hover { border-color:rgba(150,180,255,0.6); color:#fff; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="g"></canvas><button id="back" >← MISSION CONTROL</button></div>
+
+<script>
+const c=document.getElementById('g'),ctx=c.getContext('2d');
+const W=400,H=700;c.width=W;c.height=H;document.getElementById("back").addEventListener("click",function(){location.href="index.html"});
+
+// ─── Question Bank ──────
+const TOPICS=['Programming','AI/ML','Cybersecurity','Data Science','Quantum'];
+const QUESTIONS=[
+  // Programming
+  {topic:0,diff:1,q:'What does HTML stand for?',o:['HyperText Markup Language','High Tech Modern Language','Hyper Transfer Markup Language','Home Tool Markup Language'],a:0},
+  {topic:0,diff:1,q:'Which symbol is used for comments in Python?',o:['//','#','/*','--'],a:1},
+  {topic:0,diff:2,q:'What is the output of: print(2**3)?',o:['6','8','9','5'],a:1},
+  {topic:0,diff:2,q:'Which data structure uses LIFO?',o:['Queue','Array','Stack','Heap'],a:2},
+  {topic:0,diff:3,q:'What is the time complexity of binary search?',o:['O(n)','O(n²)','O(log n)','O(1)'],a:2},
+  {topic:0,diff:3,q:'What does JSON stand for?',o:['Java Source Object Notation','JavaScript Object Notation','JSON Script Object Name','Java Standard Object Network'],a:1},
+  {topic:0,diff:4,q:'In Git, what command creates a new branch?',o:['git branch new','git checkout -b','git new branch','git create branch'],a:1},
+  {topic:0,diff:5,q:'What is a closure in JavaScript?',o:['A closed loop','A function with access to outer scope variables','A finished program','A type of error'],a:1},
+
+  // AI/ML
+  {topic:1,diff:1,q:'What does AI stand for?',o:['Automated Intelligence','Artificial Intelligence','Advanced Integration','Algorithmic Input'],a:1},
+  {topic:1,diff:2,q:'What is supervised learning?',o:['Learning without data','Learning with labeled data','Learning by watching','Self-guided learning'],a:1},
+  {topic:1,diff:2,q:'What does a neural network mimic?',o:['The internet','The human brain','A telephone network','A power grid'],a:1},
+  {topic:1,diff:3,q:'What is overfitting?',o:['Too much training data','Model performs well on training but poorly on new data','Model that is too simple','Perfect accuracy on all data'],a:1},
+  {topic:1,diff:3,q:'What is the purpose of a loss function?',o:['To delete data','To measure model error','To increase speed','To add noise'],a:1},
+  {topic:1,diff:4,q:'What does GPT stand for?',o:['General Purpose Technology','Generative Pre-trained Transformer','Graphical Processing Tool','General Pattern Tester'],a:1},
+  {topic:1,diff:5,q:'What is backpropagation?',o:['Sending data backward','Algorithm to compute gradients in neural networks','Reversing a neural network','Removing layers from a model'],a:1},
+
+  // Cybersecurity
+  {topic:2,diff:1,q:'What is a firewall?',o:['A physical wall','A security system that monitors network traffic','A type of virus','A password manager'],a:1},
+  {topic:2,diff:2,q:'What does a VPN do?',o:['Speeds up internet','Creates an encrypted connection','Downloads files','Blocks ads'],a:1},
+  {topic:2,diff:2,q:'What is phishing?',o:['A hobby','Fraudulent attempt to steal information','A type of fishing','A security protocol'],a:1},
+  {topic:2,diff:3,q:'What is 2FA?',o:['Two Factor Authentication','Two File Archive','Triple Factor Access','Dual Firewall Access'],a:0},
+  {topic:2,diff:4,q:'What is a zero-day exploit?',o:['An old vulnerability','A vulnerability unknown to the vendor','A harmless bug','A type of antivirus'],a:1},
+  {topic:2,diff:5,q:'What does SQL injection target?',o:['The operating system','The database','The browser','The CPU'],a:1},
+
+  // Data Science
+  {topic:3,diff:1,q:'What library is used for data analysis in Python?',o:['Django','Pandas','Flask','TensorFlow'],a:1},
+  {topic:3,diff:2,q:'What is a histogram?',o:['A history graph','A bar chart showing data distribution','A type of database','A 3D plot'],a:1},
+  {topic:3,diff:3,q:'What does CSV stand for?',o:['Computer System Values','Comma Separated Values','Common Standard Variables','Complex String Vector'],a:1},
+  {topic:3,diff:4,q:'What is the purpose of data normalization?',o:['To delete outliers','To scale features to a similar range','To increase file size','To encrypt data'],a:1},
+
+  // Quantum
+  {topic:4,diff:2,q:'What is a qubit?',o:['A quantum unit of storage','A classical bit','A type of computer','An algorithm'],a:0},
+  {topic:4,diff:3,q:'What is superposition?',o:['When a computer overheats','A qubit existing in multiple states simultaneously','A type of error','When two computers connect'],a:1},
+  {topic:4,diff:4,q:'What is quantum entanglement?',o:['When qubits get tangled','Correlated quantum states regardless of distance','A programming error','A networking protocol'],a:1},
+];
+
+let score=0,streak=0,bestStreak=0,questionIndex=0,currentTopic=0;
+let answered=false,selectedAnswer=-1,correctAnswer=-1;
+let difficultyLevel=2; // 1-5, adapts based on performance
+let questionsAnswered=0,correctCount=0;
+let particles=[],shakeTimer=0;
+let showTopicSelect=true;
+
+function sp(x,y,color,n=8){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6-3,life:1,decay:.03+Math.random()*.05,size:2+Math.random()*4,color});}
+
+function pickQuestion(){
+  // Select questions matching current topic and near difficulty
+  const pool=QUESTIONS.filter(q=>q.topic===currentTopic&&Math.abs(q.diff-difficultyLevel)<=2);
+  if(pool.length===0){currentTopic=(currentTopic+1)%5;return pickQuestion();}
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  questionIndex=QUESTIONS.indexOf(q);
+  answered=false;selectedAnswer=-1;correctAnswer=-1;
+}
+
+// ─── Input ─────────────
+c.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const r=c.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+
+  if(showTopicSelect){
+    const ty=200;
+    TOPICS.forEach((t,i)=>{
+      const y=ty+i*65;
+      if(mx>30&&mx<W-30&&my>y&&my<y+55){showTopicSelect=false;currentTopic=i;pickQuestion();sp(W/2,y+27,'#44ccff',12);}
+    });
+    return;
+  }
+
+  if(answered){
+    pickQuestion(); return;
+  }
+
+  const q=QUESTIONS[questionIndex];
+  if(!q) return;
+  const startY=340;
+  q.o.forEach((opt,i)=>{
+    const y=startY+i*65;
+    if(mx>30&&mx<W-30&&my>y&&my<y+55){
+      selectedAnswer=i;answered=true;correctAnswer=q.a;
+      questionsAnswered++;
+      if(i===q.a){
+        correctCount++;_axp(10+streak*3);score+=10+streak*5;streak++;if(streak>=8)_ub("learn_streak","Perfect Streak","🔥");if(streak>bestStreak)bestStreak=streak;if(questionsAnswered>=20)_ub("learn_scholar","Scholar","🎓");if(correctCount>=50)_ub("learn_genius","Genius","🧠");
+        difficultyLevel=Math.min(5,difficultyLevel+1);
+        sp(W/2,y+27,'#44ff88',20);
+      }else{
+        streak=0;score=Math.max(0,score-5);
+        difficultyLevel=Math.max(1,difficultyLevel-1);
+        sp(W/2,y+27,'#ff4466',15);shakeTimer=15;
+      }
+    }
+  });
+});
+
+// ─── Update ─────────────
+function update(){
+  if(shakeTimer>0)shakeTimer--;
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life-=p.decay;if(p.life<=0)particles.splice(i,1);}
+}
+
+// ─── Render ─────────────
+function render(){
+  const ox=shakeTimer>0?(Math.random()-.5)*shakeTimer*0.4:0,oy=shakeTimer>0?(Math.random()-.5)*shakeTimer*0.4:0;
+
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#040a18');bg.addColorStop(1,'#020408');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  ctx.save();ctx.translate(ox,oy);
+
+  // Header
+  ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,60);
+  ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='left';
+  ctx.fillText('🎓 STARLABS ACADEMY',16,26);
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='10px system-ui';
+  ctx.fillText(`Score: ${score} • Streak: ${streak}🔥`,16,46);
+
+  // Stats right
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.textAlign='right';ctx.font='10px system-ui';
+  ctx.fillText(`Level ${difficultyLevel}/5`,W-16,26);
+  const acc=questionsAnswered>0?Math.round(correctCount/questionsAnswered*100):0;
+  ctx.fillText(`Accuracy: ${acc}%`,W-16,46);
+
+  if(showTopicSelect){
+    ctx.fillStyle='#fff';ctx.font='bold 20px system-ui';ctx.textAlign='center';
+    ctx.fillText('Choose Your Subject',W/2,130);
+    ctx.fillStyle='rgba(200,220,255,0.5)';ctx.font='12px system-ui';
+    ctx.fillText('Quizzes adapt to your skill level',W/2,160);
+    const topicIcons=['💻','🤖','🔒','📊','⚛️'];
+    const ty=200;
+    TOPICS.forEach((t,i)=>{
+      const y=ty+i*65;
+      const grad=ctx.createLinearGradient(30,y,30,y+55);
+      grad.addColorStop(0,'rgba(25,35,65,0.9)');grad.addColorStop(1,'rgba(15,20,45,0.95)');
+      ctx.fillStyle=grad;ctx.strokeStyle='rgba(100,150,220,0.3)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(30,y,W-60,55,12);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 16px system-ui';ctx.textAlign='left';
+      ctx.fillText(`${topicIcons[i]}  ${t}`,50,y+35);
+    });
+  }else{
+    const q=QUESTIONS[questionIndex];
+    if(!q){pickQuestion();return;}
+
+    // Topic + Difficulty
+    ctx.fillStyle='rgba(100,160,220,0.5)';ctx.font='10px system-ui';ctx.textAlign='center';
+    ctx.fillText(`${TOPICS[q.topic]} • Difficulty: ${'⭐'.repeat(q.diff)}`,W/2,85);
+
+    // Question
+    ctx.fillStyle='#fff';ctx.font='bold 15px system-ui';ctx.textAlign='center';
+    wrapText(ctx,q.q,W/2,130,W-60,22);
+
+    // Options
+    const startY=280;
+    q.o.forEach((opt,i)=>{
+      const y=startY+i*70;
+      let bgCol='rgba(20,30,60,0.8)',borderCol='rgba(100,160,240,0.3)';
+      if(answered){
+        if(i===q.a) {bgCol='rgba(68,255,136,0.2)';borderCol='#44ff88';}
+        else if(i===selectedAnswer) {bgCol='rgba(255,68,102,0.2)';borderCol='#ff4466';}
+      }else if(i===selectedAnswer){bgCol='rgba(68,200,255,0.2)';borderCol='#44ccff';}
+
+      ctx.fillStyle=bgCol;ctx.strokeStyle=borderCol;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(30,y,W-60,55,12);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='13px system-ui';ctx.textAlign='left';
+      ctx.fillText(`${String.fromCharCode(65+i)}. ${opt}`,50,y+34);
+    });
+
+    // Feedback
+    if(answered){
+      const isCorrect=selectedAnswer===correctAnswer;
+      ctx.fillStyle=isCorrect?'#44ff88':'#ff4466';ctx.font='bold 16px system-ui';ctx.textAlign='center';
+      ctx.fillText(isCorrect?'✅ Correct!':'❌ Incorrect',W/2,startY+4*70+20);
+      if(!isCorrect){
+        ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='12px system-ui';
+        ctx.fillText(`Answer: ${String.fromCharCode(65+correctAnswer)}. ${q.o[correctAnswer]}`,W/2,startY+4*70+42);
+      }
+      ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='11px system-ui';
+      ctx.fillText('Tap to continue →',W/2,startY+4*70+64);
+    }
+  }
+
+  ctx.restore();
+
+  // Best streak
+  if(bestStreak>=5){
+    ctx.fillStyle='rgba(255,215,0,0.3)';ctx.font='bold 10px system-ui';ctx.textAlign='right';
+    ctx.fillText(`🏆 Best streak: ${bestStreak}`,W-16,H-16);
+  }
+
+  // Particles
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+
+  requestAnimationFrame(render);
+}
+
+function wrapText(ctx,text,x,y,maxW,lh){
+  const words=text.split(' ');let line='',ly=y;
+  for(const w of words){
+    const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line.trim(),x,ly);line=w+' ';ly+=lh;}else line=test;
+  }
+  ctx.fillText(line.trim(),x,ly);
+}
+
+setInterval(update,1000/60);
+render();
+</script>
+
+<script>
+// ═══ STARLABS PROGRESSION ═══
+(function(){const K="starlabs_xp",B="starlabs_badges",G="starlabs_games";
+localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){const o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());const w=Math.floor(Math.sqrt(o/100))+1,nw=Math.floor(Math.sqrt(n/100))+1;if(nw>w){window._lvlup=1;window._nl=nw}else{window._lvlup=0}return n};
+window._ub=function(id,nm,ic){const bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1};
+})();
+</script>
+
+</body>
+</html>

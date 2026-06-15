@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>AR Scavenger Hunt — StarLabs</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#06060f; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:'Segoe UI',system-ui,sans-serif; touch-action:none; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; overflow:hidden; }
+  #wrap { position:relative; width:400px; height:700px; max-width:100vw; max-height:100vh; }
+  canvas { display:block; width:100%; height:100%; border-radius:12px; }
+  #back { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: rgba(20,20,50,0.9); border: 1px solid rgba(100,140,220,0.4); color: #aaccff; padding: 11px 28px; border-radius: 25px; font-size: 12px; cursor: pointer; z-index: 10; font-family: inherit; letter-spacing: 1px; transition: all 0.2s; }
+  #back:hover { border-color:rgba(150,180,255,0.6); color:#fff; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="g"></canvas><button id="back" >← MISSION CONTROL</button></div>
+
+<script>
+const c=document.getElementById('g'),ctx=c.getContext('2d');
+const W=400,H=700;c.width=W;c.height=H;document.getElementById("back").addEventListener("click",function(){location.href="index.html"});
+
+// ─── Facility Map ───────
+const ROOMS=[
+  {id:0,name:'Server Room',x:20,y:100,w:170,h:130,color:'rgba(20,40,80,0.6)',icon:'🖥️',desc:'Rows of humming servers. Cool air flows from overhead vents.'},
+  {id:1,name:'Quantum Lab',x:210,y:100,w:170,h:130,color:'rgba(40,20,80,0.6)',icon:'⚛️',desc:'Quantum computers hum with entangled particles. Cables snake across the floor.'},
+  {id:2,name:'AI Core',x:20,y:250,w:170,h:130,color:'rgba(20,80,60,0.6)',icon:'🧠',desc:'Neural network training bays. The air is warm from the GPU clusters.'},
+  {id:3,name:'BioLab',x:210,y:250,w:170,h:130,color:'rgba(80,60,20,0.6)',icon:'🧬',desc:'Sterile white counters with microscopes and petri dishes. Something glows in the corner.'},
+  {id:4,name:'Command Center',x:20,y:400,w:370,h:100,color:'rgba(60,20,20,0.6)',icon:'🎯',desc:'The central hub. Monitors display facility status. Dr. Vasquez\'s desk is here.'},
+  {id:5,name:'R&D Wing',x:20,y:520,w:170,h:110,color:'rgba(40,60,20,0.6)',icon:'🔬',desc:'Prototypes and whiteboards covered in equations. A half-built drone sits on a bench.'},
+  {id:6,name:'Archives',x:210,y:520,w:170,h:110,color:'rgba(60,40,20,0.6)',icon:'📚',desc:'Dusty shelves of research papers. Old terminals with classified data. The air smells of old paper.'},
+];
+
+// ─── Items to find ──────
+const ITEMS=[
+  {id:0,name:'Quantum Core',room:1,clue:'Where particles dance in superposition. Look near the humming machines.',found:false,icon:'💠'},
+  {id:1,name:'AI Blueprint',room:2,clue:'The warmest room in the facility. Neural networks dream here.',found:false,icon:'📋'},
+  {id:2,name:'Security Keycard',room:0,clue:'Cold air and blinking lights. The heart of StarLabs\' data flows through here.',found:false,icon:'🔑'},
+  {id:3,name:'Research Sample',room:3,clue:'Sterile surfaces and glowing substances. Something biological awaits.',found:false,icon:'🧪'},
+  {id:4,name:'Command Override',room:4,clue:'Where all decisions are made. The director\'s desk holds secrets.',found:false,icon:'🎛️'},
+  {id:5,name:'Prototype Chip',room:5,clue:'Blueprints and half-built machines. Innovation happens here.',found:false,icon:'💾'},
+  {id:6,name:'Classified File',room:6,clue:'Dust and old paper. History is stored where few venture.',found:false,icon:'📁'},
+];
+
+let playerRoom=4; // Start in Command Center
+let itemsFound=[],currentItem=null,hintShown=false;
+let scanTimer=0,scanActive=false,scanProgress=0;
+let particles=[],messageTimer=0,messageText='';
+let gameComplete=false;
+let timeLeft=120,timerRunning=false;
+let hintCount=3;
+
+function sp(x,y,color,n=8){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6-3,life:1,decay:.03+Math.random()*.05,size:2+Math.random()*4,color});}
+
+function showMessage(text){messageText=text;messageTimer=120;}
+
+function moveToRoom(id){
+  if(playerRoom===id) return;
+  playerRoom=id;
+  const room=ROOMS[id];
+  showMessage(`Entering: ${room.icon} ${room.name}`);
+  sp(W/2,H/2,'#44ccff',10);
+  hintShown=false;currentItem=null;
+
+  // Check if item is here
+  const item=ITEMS.find(i=>i.room===id&&!i.found);
+  if(item){
+    currentItem=item;
+    showMessage(`🔍 Scanner detects something...`);
+  }
+}
+
+function scanRoom(){
+  if(!currentItem||itemsFound.includes(currentItem.id)) return;
+  scanActive=true;scanProgress=0;
+}
+
+function findItem(){
+  if(!currentItem||itemsFound.includes(currentItem.id)) return;
+  currentItem.found=true;
+  itemsFound.push(currentItem.id); _axp(30); if(itemsFound.length>=3) _ub("scav_explorer","Explorer","🔍");
+  sp(W/2,H/2,'#ffd700',25);
+  showMessage(`✅ Found: ${currentItem.icon} ${currentItem.name}!`);
+  currentItem=null;
+  hintShown=false;
+
+  if(itemsFound.length===ITEMS.length){
+    gameComplete=true;
+    timerRunning=false;
+  }
+}
+
+// ─── Input ─────────────
+c.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const r=c.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+
+  if(gameComplete){
+    // Restart
+    itemsFound=[];ITEMS.forEach(i=>i.found=false);
+    playerRoom=4;gameComplete=false;timeLeft=120;timerRunning=true;hintCount=3;
+    currentItem=null;hintShown=false;showMessage('New hunt started! Find all 7 items.');
+    return;
+  }
+
+  if(!timerRunning){timerRunning=true;showMessage('Hunt started! Navigate rooms and find all 7 items.');return;}
+
+  // Room click detection on minimap or main area
+  ROOMS.forEach(room=>{
+    if(mx>room.x&&mx<room.x+room.w&&my>room.y&&my<room.y+room.h){
+      moveToRoom(room.id);
+    }
+  });
+
+  // Scan button
+  if(currentItem&&mx>W/2-50&&mx<W/2+50&&my>H-110&&my<H-70){
+    scanRoom();
+  }
+
+  // Find button (appears after scan)
+  if(scanActive&&scanProgress>=1&&currentItem&&mx>W/2-50&&mx<W/2+50&&my>H-60&&my<H-25){
+    findItem();
+  }
+
+  // Hint button
+  if(currentItem&&hintCount>0&&mx>W-70&&mx<W-16&&my>H-140&&my<H-110){
+    hintShown=true;hintCount--;sp(W-43,H-125,'#ffd700',8);
+  }
+});
+
+// ─── Update ─────────────
+function update(){
+  if(timerRunning&&!gameComplete){
+    timeLeft-=1/60;
+    if(timeLeft<=0){timeLeft=0;gameComplete=true;showMessage('⏰ Time\'s up!');}
+  }
+  if(messageTimer>0)messageTimer--;
+
+  if(scanActive){
+    scanProgress+=0.03;
+    if(scanProgress>=1) scanActive=false;
+  }
+
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life-=p.decay;if(p.life<=0)particles.splice(i,1);}
+}
+
+// ─── Render ─────────────
+function render(){
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#050a15');bg.addColorStop(1,'#020510');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='rgba(30,50,80,0.2)';ctx.lineWidth=0.5;
+  for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Header
+  ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillRect(0,0,W,55);
+  ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='left';
+  ctx.fillText('🔍 AR SCAVENGER HUNT',16,26);
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='10px system-ui';
+  ctx.fillText(`Items: ${itemsFound.length}/7`,16,45);
+
+  // Timer
+  const tColor=timeLeft<20?'#ff4466':'#44ccff';
+  ctx.fillStyle=tColor;ctx.font='bold 14px monospace';ctx.textAlign='right';
+  ctx.fillText(`${Math.ceil(timeLeft)}s`,W-16,26);
+
+  // Hint count
+  ctx.fillStyle='#ffd700';ctx.font='10px system-ui';ctx.textAlign='right';
+  ctx.fillText(`💡x${hintCount}`,W-16,45);
+
+  // ─── Draw Facility Map ───
+  ROOMS.forEach(room=>{
+    const isHere=playerRoom===room.id;
+    ctx.fillStyle=room.color;
+    ctx.strokeStyle=isHere?'#44ccff':'rgba(100,150,220,0.3)';ctx.lineWidth=isHere?2.5:1;
+    ctx.beginPath();ctx.roundRect(room.x,room.y,room.w,room.h,10);ctx.fill();ctx.stroke();
+
+    // Room name + icon
+    ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 11px system-ui';ctx.textAlign='center';
+    ctx.fillText(`${room.icon} ${room.name}`,room.x+room.w/2,room.y+room.h/2+4);
+
+    // Item indicator
+    const item=ITEMS.find(i=>i.room===room.id);
+    if(item&&!item.found){
+      ctx.fillStyle='#ffd700';
+      ctx.beginPath();ctx.arc(room.x+room.w-18,room.y+18,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 8px system-ui';ctx.textAlign='center';
+      ctx.fillText('?',room.x+room.w-18,room.y+21);
+    }else if(item&&item.found){
+      ctx.fillStyle='#44ff88';
+      ctx.font='16px system-ui';ctx.textAlign='center';
+      ctx.fillText('✅',room.x+room.w-20,room.y+25);
+    }
+  });
+
+  // Player dot
+  const pRoom=ROOMS[playerRoom];
+  const px=pRoom.x+pRoom.w/2,py=pRoom.y+pRoom.h/2;
+  ctx.fillStyle='#44ccff';ctx.shadowColor='#44ccff';ctx.shadowBlur=15;
+  ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // ─── Bottom Panel ─────
+  const panelY=H-200;
+  ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(0,panelY,W,200);
+  ctx.strokeStyle='rgba(100,150,220,0.3)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,panelY);ctx.lineTo(W,panelY);ctx.stroke();
+
+  // Current room info
+  ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.textAlign='left';
+  ctx.fillText(`${ROOMS[playerRoom].icon} ${ROOMS[playerRoom].name}`,16,panelY+22);
+  ctx.fillStyle='rgba(200,220,255,0.6)';ctx.font='10px system-ui';
+  wrapText(ctx,ROOMS[playerRoom].desc,16,panelY+42,W-32,16);
+
+  // Scanner
+  if(currentItem&&!currentItem.found){
+    ctx.fillStyle='#ffd700';ctx.font='12px system-ui';
+    ctx.fillText('📡 Scanner detects an item nearby!',16,panelY+85);
+    ctx.fillStyle='rgba(255,215,0,0.1)';ctx.strokeStyle='#ffd700';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(W/2-50,panelY+95,100,36,20);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd700';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText('🔍 SCAN',W/2,panelY+118);
+
+    // Hint button
+    if(!hintShown&&hintCount>0){
+      ctx.fillStyle='rgba(255,215,0,0.08)';ctx.strokeStyle='rgba(255,215,0,0.4)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(W-70,panelY+95,54,36,18);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#ffd700';ctx.font='bold 10px system-ui';ctx.textAlign='center';
+      ctx.fillText('💡Hint',W-43,panelY+118);
+    }
+
+    // Scanning progress
+    if(scanActive){
+      const sBarX=W/2-40,sBarY=panelY+140,sBarW=80,sBarH=8;
+      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.roundRect(sBarX,sBarY,sBarW,sBarH,4);ctx.fill();
+      ctx.fillStyle='#44ccff';ctx.beginPath();ctx.roundRect(sBarX,sBarY,sBarW*Math.min(1,scanProgress),sBarH,4);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText('Scanning...',W/2,sBarY-4);
+    }
+
+    if(scanProgress>=1&&currentItem){
+      // Find button
+      ctx.fillStyle='rgba(68,255,136,0.15)';ctx.strokeStyle='#44ff88';ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(W/2-55,panelY+155,110,36,20);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#44ff88';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+      ctx.fillText('✅ COLLECT',W/2,panelY+178);
+    }
+
+    // Hint text
+    if(hintShown){
+      ctx.fillStyle='rgba(255,220,100,0.8)';ctx.font='10px system-ui';ctx.textAlign='center';
+      ctx.fillText(`💡 ${currentItem.clue}`,W/2,panelY+195);
+    }
+  }else if(!currentItem){
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText('No items detected in this room. Try another room.',W/2,panelY+140);
+  }
+
+  // Message toast
+  if(messageTimer>0){
+    const alpha=Math.min(1,messageTimer/20);
+    ctx.fillStyle=`rgba(0,0,0,${alpha*0.8})`;
+    ctx.font='bold 12px system-ui';ctx.textAlign='center';
+    const mw=ctx.measureText(messageText).width+30;
+    ctx.fillRect(W/2-mw/2,panelY-50,mw,30);
+    ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+    ctx.fillText(messageText,W/2,panelY-28);
+  }
+
+  // Found items list
+  if(itemsFound.length>0){
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='bold 10px system-ui';ctx.textAlign='left';
+    ctx.fillText('📦 Found:',16,H-15);
+    const foundText=ITEMS.filter(i=>i.found).map(i=>i.icon).join(' ');
+    ctx.fillText(foundText,70,H-15);
+  }
+
+  // Game complete
+  if(gameComplete){
+    ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ffd700';ctx.font='bold 26px system-ui';ctx.textAlign='center';
+    ctx.shadowColor='#ffd700';ctx.shadowBlur=20;
+
+    if(itemsFound.length===ITEMS.length){
+      ctx.fillText('🎉 ALL ITEMS FOUND!',W/2,H/2-30);
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff';ctx.font='14px system-ui';
+      ctx.fillText('StarLabs classified materials secured.',W/2,H/2+5);
+    }else{
+      ctx.fillText('⏰ TIME UP!',W/2,H/2-30);
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff';ctx.font='14px system-ui';
+      ctx.fillText(`You found ${itemsFound.length}/7 items.`,W/2,H/2+5);
+    }
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='13px system-ui';
+    ctx.fillText('Tap to restart hunt',W/2,H/2+40);
+  }
+
+  // Particles
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+
+  requestAnimationFrame(render);
+}
+
+function wrapText(ctx,text,x,y,maxW,lh){
+  const words=text.split(' ');let line='',ly=y;
+  for(const w of words){
+    const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line.trim(),x,ly);line=w+' ';ly+=lh;}else line=test;
+  }
+  ctx.fillText(line.trim(),x,ly);
+}
+
+setInterval(update,1000/60);
+render();
+showMessage('🔍 Navigate the facility map. Find all 7 hidden items!');
+</script>
+
+<script>
+// ═══ STARLABS PROGRESSION ═══
+(function(){const K="starlabs_xp",B="starlabs_badges",G="starlabs_games";
+localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){const o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());const w=Math.floor(Math.sqrt(o/100))+1,nw=Math.floor(Math.sqrt(n/100))+1;if(nw>w){window._lvlup=1;window._nl=nw}else{window._lvlup=0}return n};
+window._ub=function(id,nm,ic){const bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1};
+})();
+</script>
+
+</body>
+</html>
