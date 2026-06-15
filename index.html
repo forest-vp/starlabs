@@ -5,282 +5,287 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>StarLabs — Mission Control</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    background:#030611;display:flex;justify-content:center;align-items:center;
-    min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;
-    overflow-y:auto;overflow-x:hidden;
-    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
-  }
-  #stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
-  .wrap{position:relative;z-index:1;width:420px;max-width:100vw;padding:20px 16px 40px}
-
-  /* Header */
-  .logo-area{text-align:center;margin-bottom:8px;position:relative}
-  .logo-ring{width:80px;height:80px;margin:0 auto 8px;position:relative}
-  .logo-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;
-    background:conic-gradient(from 0deg,#ffd700,#ff8c00,#ffd700,#ff8c00,#ffd700);
-    animation:spin-ring 4s linear infinite;filter:blur(2px)}
-  .logo-ring::after{content:'';position:absolute;inset:2px;border-radius:50%;background:#030611}
-  .logo-star{position:absolute;inset:12px;z-index:1;
-    background:linear-gradient(135deg,#ffd700,#ff8c00);
-    clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-    animation:pulse-star 2s ease-in-out infinite}
-  @keyframes spin-ring{to{transform:rotate(360deg)}}
-  @keyframes pulse-star{0%,100%{filter:drop-shadow(0 0 10px #ffd700);transform:scale(1)}50%{filter:drop-shadow(0 0 25px #ff8c00);transform:scale(1.1)}}
-  h1{font-size:38px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#88bbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px}
-  .subtitle{color:rgba(150,190,240,0.6);font-size:11px;letter-spacing:8px;text-transform:uppercase}
-
-  /* XP Bar */
-  .xp-section{background:rgba(10,15,40,0.8);border:1px solid rgba(100,140,220,0.25);border-radius:16px;padding:14px 18px;margin:14px 0}
-  .xp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .xp-lvl{font-size:28px;font-weight:900;color:#ffd700;text-shadow:0 0 15px rgba(255,215,0,0.4)}
-  .xp-info{text-align:right}
-  .xp-title{color:#fff;font-size:13px;font-weight:700}.xp-num{color:rgba(200,220,255,0.6);font-size:10px}
-  .xp-bar-outer{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
-  .xp-bar-inner{height:100%;background:linear-gradient(90deg,#ff8c00,#ffd700,#ff8c00);border-radius:4px;transition:width .5s;box-shadow:0 0 12px rgba(255,215,0,0.4)}
-  .xp-label{display:flex;justify-content:space-between;margin-top:4px;color:rgba(255,255,255,0.35);font-size:9px}
-
-  /* Badges */
-  .badge-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-  .badge-pill{display:flex;align-items:center;gap:5px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:4px 10px;font-size:10px;color:rgba(255,215,0,0.8)}
-  .badge-pill.locked{opacity:0.3;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3)}
-  .badge-pill .bicon{font-size:14px}
-
-  /* Stats row */
-  .stats-row{display:flex;gap:8px;margin-bottom:12px}
-  .stat-box{flex:1;background:rgba(10,15,40,0.6);border:1px solid rgba(100,140,220,0.15);border-radius:12px;padding:10px;text-align:center}
-  .stat-val{font-size:20px;font-weight:900;color:#fff}
-  .stat-lbl{font-size:9px;color:rgba(200,220,255,0.4);text-transform:uppercase;letter-spacing:1px}
-
-  /* Game Cards */
-  .section-title{color:rgba(200,220,255,0.5);font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:16px 0 10px}
-  .games-grid{display:flex;flex-direction:column;gap:10px}
-  .game-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(15,20,50,0.9),rgba(8,10,28,0.95));border:1px solid rgba(100,130,200,0.15);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-decoration:none;color:inherit;position:relative;overflow:hidden}
-  .game-card:hover,.game-card:active{border-color:rgba(150,180,255,0.5);transform:translateY(-1px);box-shadow:0 6px 24px rgba(80,120,255,0.12)}
-  .game-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0 3px 3px 0}
-  .card-icon{width:48px;height:48px;min-width:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
-  .card-info{flex:1;min-width:0}
-  .card-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px}
-  .card-desc{font-size:11px;color:rgba(170,190,220,0.45);line-height:1.3}
-  .card-meta{display:flex;align-items:center;gap:6px;margin-top:4px}
-  .card-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:.5px;text-transform:uppercase}
-  .card-xp{font-size:9px;color:rgba(255,215,0,0.5)}
-
-  /* Game accent colors */
-  .c-balance::after{background:linear-gradient(to bottom,#ff8c42,#ffd700)}
-  .c-balance .card-icon{background:rgba(255,140,66,0.12);color:#ff8c42}
-  .c-balance .card-badge{background:rgba(255,140,66,0.12);color:#ff8c42}
-  .c-bugs::after{background:linear-gradient(to bottom,#ff4466,#ff6688)}
-  .c-bugs .card-icon{background:rgba(255,68,102,0.12);color:#ff4466}
-  .c-bugs .card-badge{background:rgba(255,68,102,0.12);color:#ff4466}
-  .c-stream::after{background:linear-gradient(to bottom,#44ccff,#6688ff)}
-  .c-stream .card-icon{background:rgba(68,204,255,0.12);color:#44ccff}
-  .c-stream .card-badge{background:rgba(68,204,255,0.12);color:#44ccff}
-  .c-puzzle::after{background:linear-gradient(to bottom,#ffd700,#ffaa00)}
-  .c-puzzle .card-icon{background:rgba(255,215,0,0.12);color:#ffd700}
-  .c-puzzle .card-badge{background:rgba(255,215,0,0.12);color:#ffd700}
-  .c-story::after{background:linear-gradient(to bottom,#cc44ff,#ff66cc)}
-  .c-story .card-icon{background:rgba(204,68,255,0.12);color:#cc44ff}
-  .c-story .card-badge{background:rgba(204,68,255,0.12);color:#cc44ff}
-  .c-sim::after{background:linear-gradient(to bottom,#44ff88,#22cc66)}
-  .c-sim .card-icon{background:rgba(68,255,136,0.12);color:#44ff88}
-  .c-sim .card-badge{background:rgba(68,255,136,0.12);color:#44ff88}
-  .c-learn::after{background:linear-gradient(to bottom,#ff8800,#ffaa44)}
-  .c-learn .card-icon{background:rgba(255,136,0,0.12);color:#ff8800}
-  .c-learn .card-badge{background:rgba(255,136,0,0.12);color:#ff8800}
-  .c-scavenger::after{background:linear-gradient(to bottom,#ff4488,#ff6688)}
-  .c-scavenger .card-icon{background:rgba(255,68,136,0.12);color:#ff4488}
-  .c-scavenger .card-badge{background:rgba(255,68,136,0.12);color:#ff4488}
-
-  /* Notification toast */
-  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;padding:12px 24px;border-radius:30px;font-size:13px;font-weight:700;pointer-events:none;transition:all .4s;opacity:0}
-  .toast.show{opacity:1;top:30px}
-  .toast.lvl{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;box-shadow:0 8px 30px rgba(255,215,0,0.4)}
-  .toast.badge{background:linear-gradient(135deg,#cc44ff,#ff66cc);color:#fff;box-shadow:0 8px 30px rgba(204,68,255,0.4)}
-
-  .footer{text-align:center;margin-top:24px;color:rgba(100,140,200,0.2);font-size:10px;letter-spacing:2px}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-  .game-card:nth-child(1){animation:fadeUp .4s ease-out}
-  .game-card:nth-child(2){animation:fadeUp .4s .04s ease-out both}
-  .game-card:nth-child(3){animation:fadeUp .4s .08s ease-out both}
-  .game-card:nth-child(4){animation:fadeUp .4s .12s ease-out both}
-  .game-card:nth-child(5){animation:fadeUp .4s .16s ease-out both}
-  .game-card:nth-child(6){animation:fadeUp .4s .20s ease-out both}
-  .game-card:nth-child(7){animation:fadeUp .4s .24s ease-out both}
-  .game-card:nth-child(8){animation:fadeUp .4s .28s ease-out both}
+:root{--bg:#020812;--card:rgba(8,18,40,0.9);--border:rgba(60,120,220,0.15);--accent:#4da8ff;--gold:#ffb830;--text:#c8d8f0;--dim:rgba(150,180,220,0.45)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);display:flex;justify-content:center;align-items:flex-start;min-height:100vh;font-family:'Segoe UI','Inter',system-ui,sans-serif;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+body::-webkit-scrollbar{width:4px}body::-webkit-scrollbar-thumb{background:rgba(60,120,220,0.2);border-radius:2px}
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+/* Loading Screen */
+#loader{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s}
+#loader.hide{opacity:0;pointer-events:none}
+.loader-ring{width:60px;height:60px;border:2px solid rgba(60,120,220,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px}
+.loader-text{color:var(--dim);font-size:11px;letter-spacing:4px}
+/* Main Container */
+.main{position:relative;z-index:1;width:460px;max-width:96vw;padding:20px 16px 60px}
+/* Nova AI */
+.nova{background:linear-gradient(135deg,rgba(10,20,50,0.95),rgba(6,12,35,0.98));border:1px solid rgba(100,160,240,0.2);border-radius:18px;padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.nova::after{content:'';position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(100,180,255,0.3),transparent)}
+.nova-avatar{width:46px;height:46px;min-width:46px;border-radius:50%;background:linear-gradient(135deg,#4da8ff,#2266cc);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px rgba(77,168,255,0.3)}
+.nova-body{flex:1;min-width:0}
+.nova-name{color:#fff;font-size:13px;font-weight:700;letter-spacing:1px}
+.nova-msg{color:var(--dim);font-size:11px;line-height:1.5;margin-top:3px}
+.nova-tip{display:inline-block;background:rgba(255,184,48,0.1);color:var(--gold);padding:3px 8px;border-radius:10px;font-size:10px;margin-top:4px;letter-spacing:0.5px}
+/* User */
+.user-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 0}
+.user-avatar{width:38px;height:38px;border-radius:50%;background:rgba(20,40,80,0.8);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(100,160,240,0.3)}
+.user-info{flex:1}.user-name{color:#fff;font-size:13px;font-weight:700}.user-role{color:var(--dim);font-size:10px}
+.user-xp{text-align:right}.user-level{color:var(--gold);font-size:20px;font-weight:900}.user-xpt{color:var(--dim);font-size:9px}
+/* XP Bar */
+.xp-bar{margin-bottom:12px;background:rgba(10,20,40,0.8);border:1px solid rgba(60,120,220,0.15);border-radius:14px;padding:12px 16px}
+.xp-bar-outer{height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;margin-top:6px}
+.xp-bar-inner{height:100%;background:linear-gradient(90deg,#e8951a,var(--gold),#e8951a);border-radius:3px;transition:width .5s;box-shadow:0 0 10px rgba(255,184,48,0.3)}
+.xp-label{display:flex;justify-content:space-between;color:var(--dim);font-size:9px;margin-top:4px}
+/* Stats */
+.stats{display:flex;gap:8px;margin-bottom:10px}
+.stat{flex:1;background:rgba(10,20,40,0.6);border:1px solid rgba(60,120,220,0.1);border-radius:12px;padding:10px;text-align:center}
+.stat-val{font-size:18px;font-weight:800;color:#fff}.stat-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+/* Badges */
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.badge{display:flex;align-items:center;gap:4px;background:rgba(255,184,48,0.08);border:1px solid rgba(255,184,48,0.15);border-radius:16px;padding:4px 10px;font-size:10px;color:var(--gold)}
+.badge .bi{font-size:14px}
+/* Section */
+.section-title{color:rgba(200,220,255,0.35);font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:rgba(60,120,220,0.15)}
+/* Game Cards */
+.games{display:flex;flex-direction:column;gap:8px}
+.game{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid rgba(60,120,220,0.1);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-decoration:none;color:inherit;position:relative;overflow:hidden}
+.game:hover{border-color:rgba(100,160,240,0.35);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.game::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;border-radius:0 3px 3px 0}
+.game-icon{width:44px;height:44px;min-width:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.game-info{flex:1;min-width:0}.game-name{font-size:14px;font-weight:700;color:#fff}.game-desc{font-size:11px;color:var(--dim);line-height:1.3;margin-top:1px}
+.game-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
+.game-tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase}
+.game-xp{font-size:9px;color:rgba(255,184,48,0.5)}
+/* Colors */
+.g1::before{background:linear-gradient(#ff8c42,#ffb830)}.g1 .game-icon{background:rgba(255,140,66,0.1);color:#ff8c42}.g1 .game-tag{background:rgba(255,140,66,0.1);color:#ff8c42}
+.g2::before{background:linear-gradient(#ff4466,#ff6688)}.g2 .game-icon{background:rgba(255,68,102,0.1);color:#ff4466}.g2 .game-tag{background:rgba(255,68,102,0.1);color:#ff4466}
+.g3::before{background:linear-gradient(#44ccff,#6688ff)}.g3 .game-icon{background:rgba(68,204,255,0.1);color:#44ccff}.g3 .game-tag{background:rgba(68,204,255,0.1);color:#44ccff}
+.g4::before{background:linear-gradient(#ffd700,#ffaa00)}.g4 .game-icon{background:rgba(255,215,0,0.1);color:#ffd700}.g4 .game-tag{background:rgba(255,215,0,0.1);color:#ffd700}
+.g5::before{background:linear-gradient(#cc44ff,#ff66cc)}.g5 .game-icon{background:rgba(204,68,255,0.1);color:#cc44ff}.g5 .game-tag{background:rgba(204,68,255,0.1);color:#cc44ff}
+.g6::before{background:linear-gradient(#44ff88,#22cc66)}.g6 .game-icon{background:rgba(68,255,136,0.1);color:#44ff88}.g6 .game-tag{background:rgba(68,255,136,0.1);color:#44ff88}
+.g7::before{background:linear-gradient(#ff8800,#ffaa44)}.g7 .game-icon{background:rgba(255,136,0,0.1);color:#ff8800}.g7 .game-tag{background:rgba(255,136,0,0.1);color:#ff8800}
+.g8::before{background:linear-gradient(#ff4488,#ff6688)}.g8 .game-icon{background:rgba(255,68,136,0.1);color:#ff4488}.g8 .game-tag{background:rgba(255,68,136,0.1);color:#ff4488}
+/* Footer */
+.footer{text-align:center;margin-top:30px;padding:20px 0}
+.footer-brand{color:rgba(200,220,255,0.25);font-size:10px;letter-spacing:3px;margin-bottom:6px}
+.footer-links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.footer-links a,.footer-links button{color:rgba(150,180,220,0.3);font-size:10px;text-decoration:none;letter-spacing:1px;cursor:pointer;background:none;border:none;font-family:inherit;transition:all .2s}
+.footer-links a:hover,.footer-links button:hover{color:rgba(200,220,255,0.6)}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--card);border:1px solid rgba(60,120,220,0.25);border-radius:18px;padding:28px 24px;width:400px;max-width:92vw;max-height:80vh;overflow-y:auto;backdrop-filter:blur(20px)}
+.modal h2{color:#fff;font-size:20px;margin-bottom:16px;letter-spacing:1px}
+.modal .close{float:right;background:none;border:none;color:var(--dim);font-size:22px;cursor:pointer;font-family:inherit;line-height:1}
+/* Settings */
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(60,120,220,0.1)}
+.setting-label{color:#fff;font-size:13px}.setting-desc{color:var(--dim);font-size:10px}
+.setting input[type=range]{width:80px;accent-color:var(--accent)}
+.setting select{background:rgba(4,10,28,0.8);border:1px solid rgba(60,120,220,0.2);border-radius:8px;color:#fff;padding:5px 10px;font-family:inherit;font-size:12px}
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.game:nth-child(1){animation:fadeUp .5s ease-out}
+.game:nth-child(2){animation:fadeUp .5s .04s ease-out both}
+.game:nth-child(3){animation:fadeUp .5s .08s ease-out both}
+.game:nth-child(4){animation:fadeUp .5s .12s ease-out both}
+.game:nth-child(5){animation:fadeUp .5s .16s ease-out both}
+.game:nth-child(6){animation:fadeUp .5s .20s ease-out both}
+.game:nth-child(7){animation:fadeUp .5s .24s ease-out both}
+.game:nth-child(8){animation:fadeUp .5s .28s ease-out both}
 </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
-<div class="wrap">
-  <div class="logo-area">
-    <div class="logo-ring"><div class="logo-star"></div></div>
-    <h1>STARLABS</h1>
-    <div class="subtitle">Mission Control</div>
+<canvas id="bg"></canvas>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">INITIALIZING STARLABS</div></div>
+
+<div class="main">
+  <!-- Nova AI -->
+  <div class="nova">
+    <div class="nova-avatar">✨</div>
+    <div class="nova-body">
+      <div class="nova-name">NOVA <span style="font-weight:400;color:rgba(255,255,255,0.35);font-size:10px">AI Assistant</span></div>
+      <div class="nova-msg" id="novaMsg">Welcome back. Your projects are waiting.</div>
+      <span class="nova-tip" id="novaTip">💡 Tip: Try Puzzle Adventure for bonus XP</span>
+    </div>
   </div>
 
-  <div class="xp-section" id="xpSection">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" id="userProfile">
-    <div style="font-size:32px" id="userIcon">🚀</div>
-    <div>
-      <div style="color:#fff;font-weight:700;font-size:14px" id="userName">Agent</div>
-      <div style="color:rgba(180,200,240,0.5);font-size:10px" id="userRole">Researcher</div>
-    </div>
+  <!-- User -->
+  <div class="user-bar">
+    <div class="user-avatar" id="userIconDisplay">🚀</div>
+    <div class="user-info"><div class="user-name" id="userNameDisplay">Agent</div><div class="user-role" id="userRoleDisplay">Researcher</div></div>
+    <div class="user-xp"><div class="user-level" id="levelDisplay">1</div><div class="user-xpt">LEVEL</div></div>
   </div>
-    <div class="xp-top">
-      <div class="xp-lvl" id="lvlNum">1</div>
-      <div class="xp-info">
-        <div class="xp-title">RESEARCHER RANK</div>
-        <div class="xp-num" id="xpNum">0 XP</div>
-      </div>
-    </div>
-    <div class="xp-bar-outer"><div class="xp-bar-inner" id="xpBar" style="width:0%"></div></div>
+  <div class="xp-bar">
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--dim);font-size:10px">EXPERIENCE</span><span style="color:var(--gold);font-size:10px" id="xpDisplay">0 XP</span></div>
+    <div class="xp-bar-outer"><div class="xp-bar-inner" id="xpBarFill" style="width:0%"></div></div>
     <div class="xp-label"><span id="xpCur">0</span><span id="xpNext">100 XP</span></div>
-    <div class="badge-row" id="badgeRow"></div>
   </div>
-
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-val" id="statGames">0</div><div class="stat-lbl">Games Played</div></div>
-    <div class="stat-box"><div class="stat-val" id="statBadges">0</div><div class="stat-lbl">Badges</div></div>
-    <div class="stat-box"><div class="stat-val" id="statStreak">0</div><div class="stat-lbl">Day Streak</div></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="statGames">0</div><div class="stat-lbl">Games</div></div>
+    <div class="stat"><div class="stat-val" id="statBadges">0</div><div class="stat-lbl">Badges</div></div>
+    <div class="stat"><div class="stat-val" id="statStreak">1</div><div class="stat-lbl">Streak</div></div>
   </div>
+  <div class="badges" id="badgeDisplay"></div>
 
-  <div class="section-title">🎯 Active Missions</div>
-  <div class="games-grid" id="gamesGrid"></div>
+  <div class="section-title">ACTIVE MISSIONS</div>
+  <div class="games" id="gamesList"></div>
 
-  <div class="footer">STARLABS ● v4.0 ● <a href="login.html" style="color:inherit;text-decoration:none">LOGOUT</a></div>
+  <div class="footer">
+    <div class="footer-brand">Powered by StarLabs.dev</div>
+    <div class="footer-links">
+      <button onclick="openSettings()">⚙️ Settings</button>
+      <button onclick="openAdmin()">🔐 Admin</button>
+      <a href="login.html">↩ Logout</a>
+    </div>
+  </div>
 </div>
-<div class="toast" id="toast"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <button class="close" onclick="closeModal('settingsModal')">✕</button>
+    <h2>⚙️ Settings</h2>
+    <div class="setting-row"><div><div class="setting-label">Theme</div><div class="setting-desc">Choose visual theme</div></div><select onchange="changeTheme(this.value)"><option value="dark">Dark Space</option><option value="nebula">Purple Nebula</option><option value="ocean">Deep Ocean</option></select></div>
+    <div class="setting-row"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">Game sound effects</div></div><input type="range" min="0" max="100" value="50" oninput="setVolume('sfx',this.value)"></div>
+    <div class="setting-row"><div><div class="setting-label">Ambient Music</div><div class="setting-desc">Background atmosphere</div></div><input type="range" min="0" max="100" value="30" oninput="setVolume('ambient',this.value)"></div>
+    <div class="setting-row"><div><div class="setting-label">Particles</div><div class="setting-desc">Visual particle density</div></div><input type="range" min="0" max="100" value="80" oninput="setParticles(this.value)"></div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <button class="close" onclick="closeModal('adminModal')">✕</button>
+    <h2>🔐 Admin Panel</h2>
+    <div class="field" style="margin-bottom:12px"><label style="color:var(--dim);font-size:10px;letter-spacing:1px">Admin PIN</label><input type="password" id="adminPin" placeholder="Enter PIN" style="width:100%;padding:10px;background:rgba(4,10,28,0.7);border:1px solid rgba(60,120,220,0.2);border-radius:10px;color:#fff;font-family:inherit;font-size:14px;outline:none"></div>
+    <button class="btn" onclick="adminLogin()" style="width:100%">AUTHORIZE</button>
+    <div id="adminContent" style="display:none;margin-top:16px">
+      <div class="setting-row"><div class="setting-label">Change PIN</div><input type="text" id="newPin" placeholder="New PIN" style="width:80px;background:rgba(4,10,28,0.8);border:1px solid rgba(60,120,220,0.2);border-radius:6px;color:#fff;padding:4px 8px;font-family:inherit;font-size:11px"></div>
+      <button class="btn" onclick="changeAdminPin()" style="width:100%;margin-top:10px">UPDATE PIN</button>
+      <div class="setting-row" style="margin-top:12px"><div class="setting-label">Reset All Data</div><button class="btn ghost" onclick="resetAllData()" style="padding:8px 16px;font-size:11px">RESET</button></div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════
-// STARLABS PROGRESSION ENGINE (shared)
+// AUDIO ENGINE
 // ═══════════════════════════════════════
-const XP_KEY='starlabs_xp',BADGES_KEY='starlabs_badges',GAMES_KEY='starlabs_games',STREAK_KEY='starlabs_streak';
-function getXP(){return parseInt(localStorage.getItem(XP_KEY)||'0')}
-function getLevel(xp){return Math.floor(Math.sqrt(xp/100))+1}
-function getXPForLevel(lvl){return(lvl-1)*(lvl-1)*100}
-function xpProgress(xp){const l=getLevel(xp);const c=getXPForLevel(l);const n=getXPForLevel(l+1);return{level:l,cur:xp-c,need:n-c,pct:Math.min(100,Math.round((xp-c)/(n-c)*100))}}
-function addXP(amt){
-  const old=parseInt(localStorage.getItem(XP_KEY)||'0');
-  const was=getLevel(old);
-  const nw=old+amt;
-  localStorage.setItem(XP_KEY,nw.toString());
-  const now=getLevel(nw);
-  if(now>was){return{leveledUp:true,newLevel:now,oldLevel:was,xp:nw}}
-  return{leveledUp:false,xp:nw}
-}
-function getBadges(){try{return JSON.parse(localStorage.getItem(BADGES_KEY)||'[]')}catch(e){return[]}}
-function unlockBadge(id,name,icon){
-  const b=getBadges();
-  if(b.find(x=>x.id===id))return false;
-  b.push({id,name,icon,date:Date.now()});
-  localStorage.setItem(BADGES_KEY,JSON.stringify(b));
-  return true
-}
-function getGamesPlayed(){return parseInt(localStorage.getItem(GAMES_KEY)||'0')}
-function recordGamePlayed(){localStorage.setItem(GAMES_KEY,(getGamesPlayed()+1).toString())}
-function getStreak(){try{const s=JSON.parse(localStorage.getItem(STREAK_KEY)||'{"date":"","count":0}');const today=new Date().toDateString();const yest=new Date(Date.now()-86400000).toDateString();if(s.date===today)return s;if(s.date===yest)return{date:today,count:s.count+1};return{date:today,count:1}}catch(e){return{date:new Date().toDateString(),count:1}}}
-function saveStreak(s){localStorage.setItem(STREAK_KEY,JSON.stringify(s))}
-
-// Toast
-const toast=document.getElementById('toast');
-function showToast(msg,type='lvl'){toast.textContent=msg;toast.className='toast '+type+' show';setTimeout(()=>toast.className='toast',2500)}
+var AC=window.AudioContext||window.webkitAudioContext,audioCtx,ambientGain,sfxGain;
+function initAudio(){if(!audioCtx){audioCtx=new AC();ambientGain=audioCtx.createGain();ambientGain.gain.value=0.15;ambientGain.connect(audioCtx.destination);sfxGain=audioCtx.createGain();sfxGain.gain.value=0.3;sfxGain.connect(audioCtx.destination);startAmbient()}}
+function playTone(freq,dur,type,vol){if(!audioCtx)return;var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type||'sine';o.frequency.value=freq;g.gain.value=(vol||0.1);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);o.connect(g);g.connect(sfxGain);o.start();o.stop(audioCtx.currentTime+dur)}
+function startAmbient(){if(!audioCtx)return;function drone(){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=55+Math.sin(Date.now()*0.0001)*5;g.gain.value=0.04;o.connect(g);g.connect(ambientGain);o.start();setTimeout(function(){g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.8);o.stop(audioCtx.currentTime+1)},3000+Math.random()*2000);setTimeout(drone,4000+Math.random()*3000)}drone()}
+function setVolume(type,val){var v=val/100;if(type==='sfx'&&sfxGain)sfxGain.gain.value=v*0.6;if(type==='ambient'&&ambientGain)ambientGain.gain.value=v*0.3}
+function setParticles(val){localStorage.setItem('starlabs_particles',val);updateStarCount()}
+document.addEventListener('click',initAudio,{once:true});
 
 // ═══════════════════════════════════════
-// GAME REGISTRY
+// STARFIELD
 // ═══════════════════════════════════════
-const GAMES=[
-  {id:'balance',name:'Project Balance',desc:'Drop team blocks onto the platform — keep the seesaw balanced.',file:'balance.html',icon:'⚖️',badge:'Physics',cls:'c-balance',xpPerPlay:25},
-  {id:'bugs',name:'Bug Squash',desc:'Bugs are invading the server! Tap them before they crash the system.',file:'bugsquash.html',icon:'🐛',badge:'Arcade',cls:'c-bugs',xpPerPlay:30},
-  {id:'stream',name:'Data Stream',desc:'Catch falling data packets. Dodge the malware. Keep the pipeline flowing.',file:'datastream.html',icon:'📡',badge:'Reflex',cls:'c-stream',xpPerPlay:20},
-  {id:'puzzle',name:'Puzzle Adventure',desc:'Solve logic puzzles, crack codes, unlock classified research.',file:'puzzle.html',icon:'🧩',badge:'Puzzle',cls:'c-puzzle',xpPerPlay:35},
-  {id:'story',name:'Interactive Story',desc:'Your choices shape the fate of StarLabs. Multiple endings await.',file:'story.html',icon:'📖',badge:'Narrative',cls:'c-story',xpPerPlay:30},
-  {id:'sim',name:'Facility Simulator',desc:'Manage StarLabs resources — power, staff, research projects.',file:'sim.html',icon:'🏭',badge:'Strategy',cls:'c-sim',xpPerPlay:40},
-  {id:'learn',name:'StarLabs Academy',desc:'Learn programming, AI, cybersecurity. Adaptive quizzes.',file:'learn.html',icon:'🎓',badge:'Education',cls:'c-learn',xpPerPlay:25},
-  {id:'scavenger',name:'AR Scavenger Hunt',desc:'Navigate the facility. Find hidden items before time runs out.',file:'scavenger.html',icon:'🔍',badge:'Exploration',cls:'c-scavenger',xpPerPlay:35},
-];
+var bg=document.getElementById('bg'),bctx=bg.getContext('2d');
+bg.width=window.innerWidth;bg.height=window.innerHeight;
+var stars=[],pcount=120;
+for(var i=0;i<pcount;i++)stars.push({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.6+.3,s:.06+Math.random()*.4,o:.12+Math.random()*.3});
+function updateStarCount(){pcount=parseInt(localStorage.getItem('starlabs_particles')||'80')/100*150;stars=[];for(var i=0;i<pcount;i++)stars.push({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.6+.3,s:.06+Math.random()*.4,o:.12+Math.random()*.3})}
+function drawStars(){bctx.clearRect(0,0,bg.width,bg.height);stars.forEach(function(s){s.y+=s.s;if(s.y>bg.height){s.y=0;s.x=Math.random()*bg.width}bctx.beginPath();bctx.arc(s.x,s.y,s.r,0,Math.PI*2);bctx.fillStyle='rgba(180,210,255,'+s.o+')';bctx.fill()});requestAnimationFrame(drawStars)}drawStars();
+window.addEventListener('resize',function(){bg.width=window.innerWidth;bg.height=window.innerHeight});
 
 // ═══════════════════════════════════════
-// RENDER MAIN MENU
+// XP SYSTEM
 // ═══════════════════════════════════════
-function renderMenu(){
-  const xp=getXP();const p=xpProgress(xp);
-  document.getElementById('lvlNum').textContent=p.level;
-  document.getElementById('xpNum').textContent=xp.toLocaleString()+' XP';
-  document.getElementById('xpBar').style.width=p.pct+'%';
-  document.getElementById('xpCur').textContent=p.cur;
-  document.getElementById('xpNext').textContent=p.need+' XP';
+var XK='starlabs_xp',BK='starlabs_badges',GK='starlabs_games',SK='starlabs_streak';
+function gxp(){return parseInt(localStorage.getItem(XK)||'0')}
+function glvl(xp){return Math.floor(Math.sqrt(xp/100))+1}
+function gxpl(xp){var l=glvl(xp),c=(l-1)*(l-1)*100,n=l*l*100;return{level:l,cur:xp-c,need:n-c,pct:Math.min(100,Math.round((xp-c)/(n-c)*100))}}
+function gb(){try{return JSON.parse(localStorage.getItem(BK)||'[]')}catch(e){return[]}}
+function gs(){try{var s=JSON.parse(localStorage.getItem(SK)||'{"d":"","c":0}'),t=new Date().toDateString(),y=new Date(Date.now()-864e5).toDateString();if(s.d===t)return s;if(s.d===y)return{d:t,c:s.c+1};return{d:t,c:1}}catch(e){return{d:new Date().toDateString(),c:1}}}
+function ss(s){localStorage.setItem(SK,JSON.stringify(s))}
+function gg(){return parseInt(localStorage.getItem(GK)||'0')}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+var GAMES=[{id:'balance',n:'Project Balance',d:'Balance the platform. Physics puzzle with team blocks.',f:'balance.html',i:'⚖️',t:'Physics',c:'g1',x:25},{id:'bugs',n:'Bug Squash',d:'Tap bugs before they crash the server. Arcade action.',f:'bugsquash.html',i:'🐛',t:'Arcade',c:'g2',x:30},{id:'stream',n:'Data Stream',d:'Catch data packets. Dodge malware threats.',f:'datastream.html',i:'📡',t:'Reflex',c:'g3',x:20},{id:'puzzle',n:'Puzzle Adventure',d:'Solve logic puzzles and unlock classified research.',f:'puzzle.html',i:'🧩',t:'Puzzle',c:'g4',x:35},{id:'story',n:'Interactive Story',d:'Choices shape the fate of StarLabs. Multiple endings.',f:'story.html',i:'📖',t:'Narrative',c:'g5',x:30},{id:'sim',n:'Facility Simulator',d:'Manage power, staff, and research projects.',f:'sim.html',i:'🏭',t:'Strategy',c:'g6',x:40},{id:'learn',n:'StarLabs Academy',d:'Adaptive quizzes. Programming, AI, cybersecurity.',f:'learn.html',i:'🎓',t:'Education',c:'g7',x:25},{id:'scavenger',n:'AR Scavenger Hunt',d:'Find hidden items across the facility map.',f:'scavenger.html',i:'🔍',t:'Exploration',c:'g8',x:35}];
+
+// Nova tips
+var tips=['Try Puzzle Adventure for bonus XP today!','Bug Squash combos multiply your score.','Complete all 8 games for a secret badge.','The Facility Simulator rewards patient strategy.','Interactive Story has 8 different endings.','Did you know? Admin PIN is configurable.','Daily streak gives hidden bonuses.','Sound settings are in the Settings panel.'];
+
+function render(){
+  // User
+  var u=JSON.parse(localStorage.getItem('starlabs_current_user')||'{"displayName":"Agent","role":"Researcher","icon":"🚀"}');
+  document.getElementById('userIconDisplay').textContent=u.icon||'🚀';
+  document.getElementById('userNameDisplay').textContent=u.displayName||'Agent';
+  document.getElementById('userRoleDisplay').textContent=u.role||'Researcher';
+
+  // XP
+  var xp=gxp(),p=gxpl(xp);
+  document.getElementById('levelDisplay').textContent=p.level;
+  document.getElementById('xpDisplay').textContent=xp.toLocaleString()+' XP';
+  document.getElementById('xpBarFill').style.width=p.pct+'%';
+  document.getElementById('xpCur').textContent=p.cur;document.getElementById('xpNext').textContent=p.need+' XP';
 
   // Stats
-  document.getElementById('statGames').textContent=getGamesPlayed();
-  const badges=getBadges();
-  document.getElementById('statBadges').textContent=badges.length;
-  const s=getStreak();saveStreak(s);
-  document.getElementById('statStreak').textContent=s.count;
+  document.getElementById('statGames').textContent=gg();
+  var badges=gb();document.getElementById('statBadges').textContent=badges.length;
+  var s=gs();ss(s);document.getElementById('statStreak').textContent=s.c;
 
   // Badges
-  const br=document.getElementById('badgeRow');br.innerHTML='';
-  if(badges.length===0){br.innerHTML='<span style="font-size:10px;color:rgba(255,255,255,0.2)">Complete missions to earn badges</span>'}
-  else badges.slice(-8).reverse().forEach(b=>{const d=document.createElement('span');d.className='badge-pill';d.innerHTML=`<span class="bicon">${b.icon}</span>${b.name}`;br.appendChild(d)});
+  var bd=document.getElementById('badgeDisplay');bd.innerHTML='';
+  if(badges.length===0)bd.innerHTML='<span style="color:var(--dim);font-size:10px">Complete missions to earn badges</span>';
+  else badges.slice(-6).reverse().forEach(function(b){var el=document.createElement('span');el.className='badge';el.innerHTML='<span class="bi">'+b.icon+'</span>'+b.name;bd.appendChild(el)});
 
-  // Game cards
-  const grid=document.getElementById('gamesGrid');grid.innerHTML='';
-  GAMES.forEach(g=>{
-    const a=document.createElement('a');a.className='game-card '+g.cls;a.href=g.file;
-    a.innerHTML=`<div class="card-icon">${g.icon}</div><div class="card-info"><div class="card-title">${g.name}</div><div class="card-desc">${g.desc}</div><div class="card-meta"><span class="card-badge">${g.badge}</span><span class="card-xp">+${g.xpPerPlay} XP</span></div></div>`;
-    grid.appendChild(a);
+  // Games
+  var gl=document.getElementById('gamesList');gl.innerHTML='';
+  GAMES.forEach(function(g){
+    var a=document.createElement('a');a.className='game '+g.c;a.href=g.f;
+    a.innerHTML='<div class="game-icon">'+g.i+'</div><div class="game-info"><div class="game-name">'+g.n+'</div><div class="game-desc">'+g.d+'</div><div class="game-meta"><span class="game-tag">'+g.t+'</span><span class="game-xp">+'+g.x+' XP</span></div></div>';
+    gl.appendChild(a)
   });
+
+  // Nova
+  document.getElementById('novaMsg').textContent='Welcome back, '+u.displayName+'. Ready for today\'s mission?';
+  document.getElementById('novaTip').textContent='💡 '+tips[Math.floor(Math.random()*tips.length)];
 }
 
-// Auto-award badges based on stats
-function checkAutoBadges(){
-  const xp=getXP();const lvl=getLevel(xp);const badges=getBadges();const gp=getGamesPlayed();
-  const awards=[
-    {id:'welcome',name:'Recruit',icon:'🆕',cond:()=>gp>=1},
-    {id:'lvl5',name:'Researcher',icon:'🔬',cond:()=>lvl>=5},
-    {id:'lvl10',name:'Scientist',icon:'🥼',cond:()=>lvl>=10},
-    {id:'lvl20',name:'Senior Fellow',icon:'🏅',cond:()=>lvl>=20},
-    {id:'lvl30',name:'Lab Director',icon:'👑',cond:()=>lvl>=30},
-    {id:'gamer',name:'Dedicated',icon:'💪',cond:()=>gp>=10},
-    {id:'veteran',name:'Veteran',icon:'🎖️',cond:()=>gp>=50},
-    {id:'xp500',name:'500 Club',icon:'⭐',cond:()=>xp>=500},
-    {id:'xp2k',name:'2K Club',icon:'🌟',cond:()=>xp>=2000},
-    {id:'xp10k',name:'Elite',icon:'💎',cond:()=>xp>=10000},
-  ];
-  awards.forEach(a=>{if(a.cond()&&unlockBadge(a.id,a.name,a.icon))showToast(`${a.icon} Badge: ${a.name}`,'badge')});
-}
+// Nova tip rotation
+setInterval(function(){document.getElementById('novaTip').textContent='💡 '+tips[Math.floor(Math.random()*tips.length)]},15000);
 
-renderMenu();checkAutoBadges();
-
-// Load user profile
-var userData=JSON.parse(localStorage.getItem("starlabs_current_user")||"null");
-if(!userData) location.href="login.html";
-else {
-  document.getElementById("userIcon").textContent=userData.icon||"🚀";
-  document.getElementById("userName").textContent=userData.displayName||"Agent";
-  document.getElementById("userRole").textContent=userData.role||"Researcher";
-}
+render();
 
 // ═══════════════════════════════════════
-// STARFIELD (parallax layers)
+// MODALS
 // ═══════════════════════════════════════
-const sc=document.getElementById('stars'),sctx=sc.getContext('2d');
-sc.width=window.innerWidth;sc.height=window.innerHeight;
-const stars=[];
-for(let l=0;l<3;l++)for(let i=0;i<50+l*35;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*(1+l*.6)+.4,speed:.1+l*.25,opacity:.15+l*.15,layer:l});
+function openSettings(){document.getElementById('settingsModal').classList.add('show');playTone(880,0.1,'sine',0.05)}
+function openAdmin(){document.getElementById('adminModal').classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeModal('settingsModal')});
+document.getElementById('adminModal').addEventListener('click',function(e){if(e.target===this)closeModal('adminModal')});
 
-function drawStars(){
-  sctx.clearRect(0,0,sc.width,sc.height);
-  stars.forEach(s=>{s.y+=s.speed;if(s.y>sc.height){s.y=0;s.x=Math.random()*sc.width}sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,Math.PI*2);sctx.fillStyle=`rgba(${s.layer<2?'180,200,255':'220,230,255'},${s.opacity})`;sctx.fill()});
-  requestAnimationFrame(drawStars)
+function adminLogin(){
+  var pin=document.getElementById('adminPin').value,ap=JSON.parse(localStorage.getItem('starlabs_admin')||'{"pin":"7394"}');
+  if(pin===ap.pin){document.getElementById('adminContent').style.display='block';playTone(660,0.15,'triangle',0.08)}
+  else playTone(220,0.2,'sawtooth',0.06)
 }
-drawStars();
-window.addEventListener('resize',()=>{sc.width=window.innerWidth;sc.height=window.innerHeight});
+function changeAdminPin(){
+  var np=document.getElementById('newPin').value;if(!np)return;
+  localStorage.setItem('starlabs_admin',JSON.stringify({pin:np}));playTone(880,0.2,'sine',0.08)
+}
+function resetAllData(){
+  if(confirm('DELETE ALL StarLabs data? This cannot be undone.')){['starlabs_xp','starlabs_badges','starlabs_games','starlabs_streak','starlabs_users','starlabs_current_user','starlabs_particles'].forEach(function(k){localStorage.removeItem(k)});location.reload()}
+}
+function changeTheme(t){localStorage.setItem('starlabs_theme',t);playTone(660,0.1,'sine',0.05)}
+setParticles(localStorage.getItem('starlabs_particles')||'80');
 
-// Listen for XP updates from games
-window.addEventListener('storage',e=>{if(e.key===XP_KEY||e.key===BADGES_KEY||e.key===GAMES_KEY){renderMenu();checkAutoBadges()}});
+// ═══════════════════════════════════════
+// LOADING SCREEN
+// ═══════════════════════════════════════
+setTimeout(function(){document.getElementById('loader').classList.add('hide');setTimeout(function(){var l=document.getElementById('loader');if(l)l.remove()},600)},1200);
+
+// ═══════════════════════════════════════
+// EASTER EGG: Konami code
+// ═══════════════════════════════════════
+var konami=[],konamiSeq=[38,38,40,40,37,39,37,39,66,65];
+document.addEventListener('keydown',function(e){konami.push(e.keyCode);if(konami.length>10)konami.shift();if(konami.join(',')===konamiSeq.join(',')){document.body.style.animation='none';document.body.offsetHeight;playTone(523,0.1,'square',0.1);setTimeout(function(){playTone(659,0.1,'square',0.1)},100);setTimeout(function(){playTone(784,0.2,'square',0.15)},200);var nb=document.querySelector('.nova-avatar');if(nb){nb.textContent='🐱';nb.style.background='linear-gradient(135deg,#ff4488,#cc44ff)';setTimeout(function(){nb.textContent='✨';nb.style.background='linear-gradient(135deg,#4da8ff,#2266cc)'},5000)}}});
 </script>
 </body>
 </html>

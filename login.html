@@ -3,96 +3,162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>StarLabs — Login</title>
+<title>StarLabs — Secure Access</title>
 <style>
+:root{--bg:#020812;--panel:rgba(8,16,40,0.85);--border:rgba(60,120,220,0.2);--accent:#4da8ff;--gold:#ffb830;--text:#c8d8f0;--dim:rgba(150,180,220,0.4)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#030611;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden}
-canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.login-box{position:relative;z-index:1;width:380px;max-width:95vw;padding:40px 30px;background:rgba(10,15,40,0.85);border:1px solid rgba(100,140,220,0.25);border-radius:20px;backdrop-filter:blur(20px);text-align:center}
-.logo{width:70px;height:70px;margin:0 auto 12px;background:linear-gradient(135deg,#ffd700,#ff8c00);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{filter:drop-shadow(0 0 10px #ffd700)}50%{filter:drop-shadow(0 0 25px #ff8c00)}}
-h1{font-size:28px;font-weight:900;background:linear-gradient(135deg,#fff,#88bbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:4px}
-.sub{color:rgba(150,190,240,0.5);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:24px}
-.input-group{margin-bottom:16px;text-align:left}
-.input-group label{display:block;color:rgba(180,200,240,0.6);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.input-group input{width:100%;padding:12px 16px;background:rgba(5,10,30,0.8);border:1px solid rgba(100,140,220,0.3);border-radius:12px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:all .2s}
-.input-group input:focus{border-color:rgba(150,200,255,0.6);box-shadow:0 0 15px rgba(100,150,255,0.1)}
-.input-group input::placeholder{color:rgba(150,180,220,0.25)}
-.role-select{display:flex;gap:8px;margin:16px 0}
-.role-opt{flex:1;padding:10px 8px;background:rgba(5,10,30,0.6);border:1px solid rgba(100,140,220,0.2);border-radius:12px;color:rgba(200,220,255,0.5);font-size:11px;cursor:pointer;transition:all .2s;text-align:center;font-family:inherit}
-.role-opt:hover,.role-opt.sel{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,0.08)}
-.btn{width:100%;padding:14px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:14px;color:#000;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;font-family:inherit;margin-top:8px}
-.btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(255,215,0,0.3)}
-.btn.sec{background:transparent;border:1px solid rgba(100,140,220,0.3);color:rgba(200,220,255,0.6);margin-top:4px;font-size:12px;padding:10px}
-.btn.sec:hover{box-shadow:none;color:#fff;border-color:rgba(150,200,255,0.6)}
-.error{color:#ff4466;font-size:11px;margin-top:8px;display:none}
-.divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:rgba(255,255,255,0.2);font-size:10px;letter-spacing:2px}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(100,140,220,0.2)}
-.existing-users{margin-top:12px}
-.existing-users select{width:100%;padding:10px;background:rgba(5,10,30,0.8);border:1px solid rgba(100,140,220,0.3);border-radius:12px;color:#fff;font-size:13px;font-family:inherit;outline:none;cursor:pointer}
-.existing-users select option{background:#0a0f28;color:#fff}
+body{background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI','Inter',system-ui,sans-serif;overflow:hidden}
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+.container{position:relative;z-index:1;width:440px;max-width:94vw;display:flex;flex-direction:column;gap:0}
+/* Glass panel */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:36px 32px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 80px rgba(40,100,220,0.06),inset 0 1px 0 rgba(255,255,255,0.03)}
+/* Logo */
+.brand{text-align:center;margin-bottom:8px}
+.logo-svg{width:72px;height:72px;margin:0 auto 12px;display:block}
+.logo-ring{fill:none;stroke:url(#lg);stroke-width:2;animation:spin 6s linear infinite;transform-origin:36px 36px}
+.logo-star{fill:url(#sg);animation:pulse 2s ease-in-out infinite;transform-origin:36px 36px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:0.8;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+h1{font-size:30px;font-weight:800;background:linear-gradient(135deg,#e8f0ff,#80b8ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:5px;margin:4px 0}
+.tagline{color:var(--dim);font-size:11px;letter-spacing:6px;text-transform:uppercase;margin-bottom:8px}
+.subtitle{color:rgba(180,200,240,0.5);font-size:12px;letter-spacing:2px;margin-bottom:28px}
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid rgba(60,120,220,0.15)}
+.tab{flex:1;padding:10px;text-align:center;color:var(--dim);font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab.active{color:#fff;border-bottom-color:var(--accent)}
+.tab:hover{color:rgba(200,220,255,0.8)}
+/* Form */
+.field{margin-bottom:16px}
+.field label{display:block;color:var(--dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:13px 16px;background:rgba(4,10,28,0.7);border:1px solid rgba(60,120,220,0.2);border-radius:12px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:all .25s}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(60,140,240,0.12)}
+.field input::placeholder{color:rgba(150,180,220,0.2)}
+/* Role select */
+.roles{display:flex;gap:8px;margin:16px 0}
+.role{flex:1;padding:12px 8px;background:rgba(4,10,28,0.5);border:1px solid rgba(60,120,220,0.15);border-radius:14px;text-align:center;cursor:pointer;transition:all .25s;color:var(--dim);font-size:10px;letter-spacing:1px;font-family:inherit}
+.role .ricon{font-size:22px;display:block;margin-bottom:4px}
+.role:hover,.role.sel{border-color:var(--gold);color:var(--gold);background:rgba(255,184,48,0.06)}
+/* Buttons */
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,#ffb830,#e8951a);border:none;border-radius:14px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .3s;font-family:inherit;margin-top:4px;position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(255,184,48,0.25)}
+.btn:active{transform:scale(0.98)}
+.btn.ghost{background:transparent;border:1px solid rgba(60,120,220,0.25);color:var(--dim);margin-top:8px;font-size:11px;padding:10px;font-weight:500}
+.btn.ghost:hover{color:#fff;border-color:rgba(100,160,240,0.5);box-shadow:none}
+/* Error */
+.error{color:#ff5470;font-size:11px;text-align:center;margin-top:8px;display:none;letter-spacing:0.5px}
+/* Users */
+.users-section{margin-top:20px}
+.users-section select{width:100%;padding:11px;background:rgba(4,10,28,0.6);border:1px solid rgba(60,120,220,0.2);border-radius:12px;color:#fff;font-size:13px;font-family:inherit;outline:none;cursor:pointer}
+.users-section select option{background:#0c1630;color:#fff}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:rgba(255,255,255,0.15);font-size:10px;letter-spacing:3px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(60,120,220,0.15)}
+/* Admin */
+.admin-toggle{text-align:center;margin-top:14px}
+.admin-toggle a{color:rgba(150,180,220,0.2);font-size:10px;text-decoration:none;letter-spacing:2px;transition:all .3s}
+.admin-toggle a:hover{color:rgba(150,180,220,0.5)}
+/* Toast */
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:100;padding:12px 24px;border-radius:30px;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:all .4s;letter-spacing:0.5px}
+.toast.show{opacity:1;top:32px}
+.toast.success{background:linear-gradient(135deg,#1a8a3a,#22aa44);color:#fff}
+.toast.error{background:linear-gradient(135deg,#aa2244,#cc3355);color:#fff}
+
+@media(max-width:480px){.panel{padding:24px 20px;border-radius:18px}h1{font-size:24px}.logo-svg{width:56px;height:56px}}
 </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
-<div class="login-box">
-  <div class="logo"></div>
-  <h1>STARLABS</h1>
-  <div class="sub">Secure Access Portal</div>
-
-  <div id="formMode">
-    <div class="input-group"><label>Codename</label><input type="text" id="username" placeholder="e.g. nova_researcher" maxlength="20" autocomplete="off"></div>
-    <div class="input-group"><label>Display Name</label><input type="text" id="displayName" placeholder="Your name" maxlength="24"></div>
-
-    <label style="color:rgba(180,200,240,0.5);font-size:10px;letter-spacing:2px;text-transform:uppercase;display:block;text-align:left;margin-bottom:6px">Division</label>
-    <div class="role-select" id="roleSelect">
-      <div class="role-opt" data-role="Researcher">🔬<br>Research</div>
-      <div class="role-opt" data-role="Engineer">⚙️<br>Engineer</div>
-      <div class="role-opt" data-role="Operative">🕵️<br>Security</div>
+<canvas id="bg"></canvas>
+<div class="container">
+  <div class="panel">
+    <div class="brand">
+      <svg class="logo-svg" viewBox="0 0 72 72"><defs><linearGradient id="lg" x1="0" y1="0" x2="72" y2="72"><stop offset="0%" stop-color="#ffb830"/><stop offset="100%" stop-color="#e8951a"/></linearGradient><linearGradient id="sg" x1="0" y1="0" x2="72" y2="72"><stop offset="0%" stop-color="#ffd700"/><stop offset="100%" stop-color="#ff8c00"/></linearGradient></defs><circle class="logo-ring" cx="36" cy="36" r="32"/><polygon class="logo-star" points="36,3 43,25 66,25 48,39 54,61 36,49 18,61 24,39 6,25 29,25"/></svg>
+      <h1>STARLABS</h1>
+      <div class="tagline">starlabs.dev</div>
+      <div class="subtitle">Secure Access Terminal</div>
     </div>
 
-    <div class="error" id="error">Please fill all fields</div>
-    <button class="btn" id="loginBtn">ENTER STARLABS</button>
-  </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="login">SIGN IN</button>
+      <button class="tab" data-tab="register">REGISTER</button>
+    </div>
 
-  <div class="divider">EXISTING PERSONNEL</div>
-  <div class="existing-users">
-    <select id="userSelect" onchange="quickLogin()"><option value="">— Select profile —</option></select>
+    <div id="formArea">
+      <div class="field"><label>Codename</label><input type="text" id="username" placeholder="nova.researcher" maxlength="20" autocomplete="off"></div>
+      <div class="field" id="nameField" style="display:none"><label>Display Name</label><input type="text" id="displayName" placeholder="Dr. Alex Chen" maxlength="24"></div>
+      <label style="color:var(--dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px;font-weight:600">Division</label>
+      <div class="roles" id="roleSelect">
+        <div class="role sel" data-role="Research"><span class="ricon">🔬</span>Research</div>
+        <div class="role" data-role="Engineering"><span class="ricon">⚙️</span>Engineering</div>
+        <div class="role" data-role="Security"><span class="ricon">🛡️</span>Security</div>
+      </div>
+      <div class="error" id="error">Please fill all fields</div>
+      <button class="btn" id="submitBtn">AUTHENTICATE</button>
+    </div>
+
+    <div class="divider">EXISTING PERSONNEL</div>
+    <div class="users-section"><select id="userSelect" onchange="quickLogin()"><option value="">— Select profile —</option></select></div>
+
+    <button class="btn ghost" id="skipBtn" style="display:none">Continue as Guest</button>
+    <div class="admin-toggle"><a href="#" id="adminLink">● ADMIN ACCESS ●</a></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
-var stars=[];var sc=document.getElementById('stars'),sctx=sc.getContext('2d');
-sc.width=window.innerWidth;sc.height=window.innerHeight;
-for(var i=0;i<100;i++)stars.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.5+.3,s:.1+Math.random()*.4});
-function ds(){sctx.clearRect(0,0,sc.width,sc.height);stars.forEach(function(s){s.y+=s.s;if(s.y>sc.height){s.y=0;s.x=Math.random()*sc.width}sctx.beginPath();sctx.arc(s.x,s.y,s.r,0,Math.PI*2);sctx.fillStyle='rgba(180,200,255,'+(.2+s.s*.3)+')';sctx.fill()});requestAnimationFrame(ds)}ds();
+// ═══════════════════════════════════════
+// STARFIELD + NEBULA BACKGROUND
+// ═══════════════════════════════════════
+var bg=document.getElementById('bg'),bctx=bg.getContext('2d');
+bg.width=window.innerWidth;bg.height=window.innerHeight;
+var stars=[],neb=[];
+for(var i=0;i<180;i++)stars.push({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.8+.3,s:.08+Math.random()*.5,o:.15+Math.random()*.35});
+for(var i=0;i<3;i++)neb.push({x:Math.random()*bg.width,y:Math.random()*bg.height,r:80+Math.random()*200,o:.015+Math.random()*.02,c:['100,160,255','160,120,255','80,180,220'][i]});
+function drawBg(){
+  bctx.clearRect(0,0,bg.width,bg.height);
+  // Nebulae
+  neb.forEach(function(n){var g=bctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);g.addColorStop(0,'rgba('+n.c+','+n.o+')');g.addColorStop(1,'rgba(0,0,0,0)');bctx.fillStyle=g;bctx.fillRect(n.x-n.r,n.y-n.r,n.r*2,n.r*2)});
+  // Stars
+  stars.forEach(function(s){s.y+=s.s;if(s.y>bg.height){s.y=0;s.x=Math.random()*bg.width}bctx.beginPath();bctx.arc(s.x,s.y,s.r,0,Math.PI*2);bctx.fillStyle='rgba(180,210,255,'+s.o+')';bctx.fill()});
+  requestAnimationFrame(drawBg)
+}drawBg();
+window.addEventListener('resize',function(){bg.width=window.innerWidth;bg.height=window.innerHeight});
 
-var selectedRole='Researcher';
-document.querySelectorAll('.role-opt').forEach(function(el){el.addEventListener('click',function(){document.querySelectorAll('.role-opt').forEach(function(e){e.classList.remove('sel')});this.classList.add('sel');selectedRole=this.dataset.role})});
-document.querySelector('.role-opt').classList.add('sel');
+// ═══════════════════════════════════════
+// LOGIN SYSTEM
+// ═══════════════════════════════════════
+var mode='login',selectedRole='Research';
+document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});this.classList.add('active');mode=this.dataset.tab;document.getElementById('nameField').style.display=mode==='register'?'block':'none';document.getElementById('submitBtn').textContent=mode==='register'?'CREATE PROFILE':'AUTHENTICATE'})});
+document.querySelectorAll('.role').forEach(function(r){r.addEventListener('click',function(){document.querySelectorAll('.role').forEach(function(x){x.classList.remove('sel')});this.classList.add('sel');selectedRole=this.dataset.role})});
+document.querySelector('.role').classList.add('sel');
 
-function loadUsers(){var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');var sel=document.getElementById('userSelect');sel.innerHTML='<option value="">— Select profile —</option>';users.forEach(function(u,i){sel.innerHTML+='<option value="'+i+'">'+u.icon+' '+u.displayName+' ('+u.username+') — '+u.role+'</option>'})}
-loadUsers();
+function loadUsers(){var u=JSON.parse(localStorage.getItem('starlabs_users')||'[]'),s=document.getElementById('userSelect');s.innerHTML='<option value="">— Select profile —</option>';u.forEach(function(u,i){s.innerHTML+='<option value="'+i+'">'+u.icon+' '+u.displayName+' ('+u.username+') — '+u.role+'</option>'})}loadUsers();
+function quickLogin(){var i=document.getElementById('userSelect').value;if(i==='')return;var u=JSON.parse(localStorage.getItem('starlabs_users')||'[]');loginUser(u[parseInt(i)])}
 
-function quickLogin(){var idx=document.getElementById('userSelect').value;if(idx==='')return;var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');var u=users[parseInt(idx)];loginUser(u)}
+function showToast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast '+t+' show';setTimeout(function(){el.className='toast'},2500)}
 
-document.getElementById('loginBtn').addEventListener('click',function(){
+document.getElementById('submitBtn').addEventListener('click',function(){
   var un=document.getElementById('username').value.trim(),dn=document.getElementById('displayName').value.trim();
-  if(!un||!dn){document.getElementById('error').style.display='block';return}
+  if(!un||(mode==='register'&&!dn)){document.getElementById('error').style.display='block';return}
   document.getElementById('error').style.display='none';
-  var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]');
-  var existing=users.find(function(u){return u.username===un});
-  if(existing){loginUser(existing);return}
-  var icons=['🔬','⚙️','🕵️','🚀','💻','🧬'];
-  var user={username:un,displayName:dn,role:selectedRole,icon:icons[Math.floor(Math.random()*icons.length)],created:Date.now()};
-  users.push(user);localStorage.setItem('starlabs_users',JSON.stringify(users));
-  loginUser(user)
+  if(un==='admin'&&mode==='login'){var au=JSON.parse(localStorage.getItem('starlabs_admin')||'{"pin":"0000"}');var p=prompt('Admin PIN:');if(p===au.pin){localStorage.setItem('starlabs_is_admin','1');loginUser({username:'admin',displayName:'Administrator',role:'Admin',icon:'👑',created:Date.now()});return}else{showToast('Invalid admin credentials','error');return}}
+  var users=JSON.parse(localStorage.getItem('starlabs_users')||'[]'),ex=users.find(function(u){return u.username===un});
+  if(mode==='register'){
+    if(ex){showToast('Codename already taken','error');return}
+    var icons=['🔬','⚙️','🛡️','🚀','💻','🧬','🔮'];ex={username:un,displayName:dn,role:selectedRole,icon:icons[Math.floor(Math.random()*icons.length)],created:Date.now()};users.push(ex);localStorage.setItem('starlabs_users',JSON.stringify(users));showToast('Profile created! Welcome to StarLabs.','success')
+  }else{if(!ex){showToast('Profile not found. Register first.','error');return}}
+  loginUser(ex||users.find(function(u){return u.username===un}))
 });
 
 function loginUser(u){localStorage.setItem('starlabs_current_user',JSON.stringify(u));location.href='index.html'}
 
-// Skip button if already logged in
-if(localStorage.getItem('starlabs_current_user')){var u=JSON.parse(localStorage.getItem('starlabs_current_user'));document.getElementById('username').value=u.username;document.getElementById('displayName').value=u.displayName}
+// Admin link
+document.getElementById('adminLink').addEventListener('click',function(e){e.preventDefault();document.getElementById('username').value='admin';document.getElementById('nameField').style.display='none';mode='login';document.getElementById('submitBtn').textContent='AUTHENTICATE';document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.querySelector('[data-tab="login"]').classList.add('active')});
+
+// Pre-fill if returning
+var cu=localStorage.getItem('starlabs_current_user');if(cu){var u=JSON.parse(cu);document.getElementById('username').value=u.username;document.getElementById('displayName').value=u.displayName||'';document.getElementById('skipBtn').style.display='block'}
+document.getElementById('skipBtn').addEventListener('click',function(){location.href='index.html'});
+
+// Init admin if not set
+if(!localStorage.getItem('starlabs_admin'))localStorage.setItem('starlabs_admin',JSON.stringify({pin:'7394'}));
 </script>
 </body>
 </html>
