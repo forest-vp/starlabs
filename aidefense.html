@@ -1,0 +1,78 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>AI Defense — StarLabs</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020812;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;touch-action:none}
+#wrap{width:440px;max-width:100vw;height:100vh;max-height:750px;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;padding:8px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px}
+.hdr-logo{font-size:18px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:inherit;transition:all .2s}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+canvas{flex:1;display:block;width:100%}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">🛡️</span><span class="hdr-title">AI DEFENSE</span><span style="color:#44ff88;font-size:11px">❤️ <span id="lives">10</span></span><span style="color:#ffb830;font-size:11px">🏆 <span id="scoreAD">0</span></span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<canvas id="g"></canvas></div>
+<script>
+(function(){var K="starlabs_xp",G="starlabs_games",B="starlabs_badges";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var c=document.getElementById('g'),ctx=c.getContext('2d'),W=440,H=580;
+c.width=W;c.height=H;
+var towers=[],enemies=[],bullets=[],particles=[],lives=10,score=0,wave=1,spawnTimer=0,gameOver=false,money=100,selectedTower=null;
+
+function spawnEnemy(){enemies.push({x:Math.random()<0.5?-20:W+20,y:80+Math.random()*(H-160),v:0.5+wave*0.15,hp:3+wave,maxHp:3+wave,r:10,reward:10+wave*2})}
+
+function placeTower(mx,my){
+  if(money<50)return;money-=50;towers.push({x:mx,y:my,range:90,cooldown:0,fireRate:40,damage:1,color:'#44ccff'})
+}
+
+c.addEventListener('pointerdown',function(e){
+  e.preventDefault();if(gameOver){restart();return}
+  var r=c.getBoundingClientRect(),mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+  if(my>50)placeTower(mx,my)
+});
+
+function update(){
+  if(gameOver)return;
+  spawnTimer++;if(spawnTimer>Math.max(15,60-wave*3)){spawnTimer=0;spawnEnemy()}
+  if(enemies.length===0&&spawnTimer>30){wave++;spawnTimer=0;for(var i=0;i<wave+2;i++)spawnEnemy();money+=25}
+  towers.forEach(function(t){if(t.cooldown>0)t.cooldown--});
+  enemies.forEach(function(e){e.x+=e.v;if(e.x>W+30||e.x<-30){e.x=e.x>W?50:W-50}});
+  // Tower targeting
+  towers.forEach(function(t){
+    if(t.cooldown>0)return;
+    for(var i=0;i<enemies.length;i++){var e=enemies[i],dx=e.x-t.x,dy=e.y-t.y;if(Math.sqrt(dx*dx+dy*dy)<t.range){t.cooldown=t.fireRate;bullets.push({x:t.x,y:t.y,tx:e.x,ty:e.y,damage:t.damage,life:20});break}}
+  });
+  // Bullets
+  for(var i=bullets.length-1;i>=0;i--){var b=bullets[i];b.x+=(b.tx-b.x)*0.2;b.y+=(b.ty-b.y)*0.2;b.life--;if(b.life<=0){bullets.splice(i,1);continue}
+    for(var j=enemies.length-1;j>=0;j--){var e=enemies[j],dx=e.x-b.x,dy=e.y-b.y;if(Math.sqrt(dx*dx+dy*dy)<e.r+5){e.hp-=b.damage;bullets.splice(i,1);if(e.hp<=0){score+=e.reward;money+=e.reward;enemies.splice(j,1);_axp(e.reward)}break}}}
+  // Enemy reaches end
+  for(var i=enemies.length-1;i>=0;i--){if(enemies[i].x>W-10||enemies[i].x<10){enemies.splice(i,1);lives--;document.getElementById('lives').textContent=lives;if(lives<=0){gameOver=true;_axp(score);if(score>=200)_ub('defense_commander','Server Guardian','🛡️')}}}
+  document.getElementById('scoreAD').textContent=score;
+}
+
+function render(){
+  ctx.fillStyle='#020812';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(30,60,100,0.12)';ctx.lineWidth=0.5;for(var y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Server (center)
+  ctx.fillStyle='rgba(68,204,255,0.15)';ctx.strokeStyle='#44ccff';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(W/2-30,H-50,60,40,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('SERVER',W/2,H-25);
+  // Towers
+  towers.forEach(function(t){ctx.fillStyle=t.color;ctx.shadowColor=t.color;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(t.x,t.y,12,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,Math.PI*2);ctx.stroke()});
+  // Enemies
+  enemies.forEach(function(e){ctx.fillStyle='#ff4466';ctx.shadowColor='#ff4466';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.fillText(e.hp,e.x,e.y+3)});
+  // Bullets
+  bullets.forEach(function(b){ctx.fillStyle='#ffb830';ctx.beginPath();ctx.arc(b.x,b.y,3,0,Math.PI*2);ctx.fill()});
+  // UI
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,50);
+  ctx.fillStyle='#fff';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText('Wave '+wave+' | 💰 $'+money+' | 🏗️ Tower: $50',10,20);
+  ctx.fillText('Tap to place towers',10,40);
+
+  if(gameOver){ctx.fillStyle='rgba(0,0,0,0.75)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ff4466';ctx.font='bold 26px system-ui';ctx.textAlign='center';ctx.fillText('SERVER BREACHED',W/2,H/2-15);ctx.fillStyle='#fff';ctx.font='14px system-ui';ctx.fillText('Wave '+wave+' | Score: '+score,W/2,H/2+15);ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='11px system-ui';ctx.fillText('Tap to restart',W/2,H/2+38)}
+  requestAnimationFrame(render)
+}
+
+function restart(){towers=[];enemies=[];bullets=[];lives=10;score=0;wave=1;money=100;gameOver=false;spawnTimer=0;document.getElementById('lives').textContent='10';document.getElementById('scoreAD').textContent='0'}
+setInterval(update,1000/60);render();
+</script></body></html>

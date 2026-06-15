@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Quantum Runner — StarLabs</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020812;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;touch-action:none}
+#wrap{width:420px;max-width:100vw;height:100vh;max-height:750px;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;padding:8px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px}
+.hdr-logo{font-size:18px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:inherit;transition:all .2s}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+canvas{flex:1;display:block;width:100%}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">⚡</span><span class="hdr-title">QUANTUM RUNNER</span><span class="hdr-score" style="color:#ffb830;font-size:12px;font-weight:700" id="scoreQR">0</span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<canvas id="g"></canvas></div>
+<script>
+(function(){var K="starlabs_xp",G="starlabs_games",B="starlabs_badges";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var c=document.getElementById('g'),ctx=c.getContext('2d'),W=420,H=650;
+c.width=W;c.height=H;
+var player={x:W/2,y:H-120,w:30,h:40},obstacles=[],stars=[],score=0,speed=3,gameOver=false,frame=0,jumping=false,jumpVel=0;
+for(var i=0;i<60;i++)stars.push({x:Math.random()*W,y:Math.random()*H,s:0.5+Math.random()*2});
+
+function spawnObstacle(){
+  var types=[{w:30,h:30,c:'#ff4466',n:'bug'},{w:50,h:20,c:'#ff8800',n:'wall'},{w:25,h:50,c:'#cc44ff',n:'tower'}];
+  var t=types[Math.floor(Math.random()*types.length)];
+  obstacles.push({x:Math.random()*(W-60)+30,y:-50,w:t.w,h:t.h,c:t.c,v:2+Math.random()*speed*.5})
+}
+
+function update(){
+  if(gameOver)return;frame++;
+  if(frame%Math.max(20,60-Math.floor(score/5))===0)spawnObstacle();
+  if(jumping){player.y+=jumpVel;jumpVel+=0.6;if(player.y>=H-120){player.y=H-120;jumping=false;jumpVel=0}}
+  for(var i=obstacles.length-1;i>=0;i--){obstacles[i].y+=obstacles[i].v;if(obstacles[i].y>H){obstacles[i]=null;score++;document.getElementById('scoreQR').textContent=score}}
+  obstacles=obstacles.filter(Boolean);
+  stars.forEach(function(s){s.y+=s.s;if(s.y>H){s.y=0;s.x=Math.random()*W}});
+  // Collision
+  for(var i=0;i<obstacles.length;i++){var o=obstacles[i];if(o.y+o.h>player.y&&o.y<player.y+player.h&&o.x+o.w>player.x&&o.x<player.x+player.w){gameOver=true;_axp(score);if(score>=50)_ub('runner_pro','Quantum Pro','⚡');if(score>=150)_ub('runner_master','Speed Demon','💨')}}
+  speed=3+score*.05;
+}
+
+function render(){
+  ctx.fillStyle='#020812';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(30,60,100,0.1)';ctx.lineWidth=0.5;
+  for(var y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,(y+frame*2)%H);ctx.lineTo(W,(y+frame*2)%H);ctx.stroke()}
+  // Stars
+  stars.forEach(function(s){ctx.fillStyle='rgba(180,210,255,'+(0.2+s.s*0.1)+')';ctx.beginPath();ctx.arc(s.x,s.y,1.5,0,Math.PI*2);ctx.fill()});
+  // Obstacles
+  obstacles.forEach(function(o){ctx.fillStyle=o.c;ctx.shadowColor=o.c;ctx.shadowBlur=8;ctx.beginPath();ctx.roundRect(o.x,o.y,o.w,o.h,5);ctx.fill();ctx.shadowBlur=0});
+  // Player
+  ctx.fillStyle='#44ccff';ctx.shadowColor='#44ccff';ctx.shadowBlur=15;
+  ctx.beginPath();ctx.roundRect(player.x-player.w/2,player.y-player.h/2,player.w,player.h,8);ctx.fill();ctx.shadowBlur=0;
+  // Eyes
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(player.x-8,player.y-8,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(player.x+8,player.y-8,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#020812';ctx.beginPath();ctx.arc(player.x-8,player.y-8,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(player.x+8,player.y-8,2.5,0,Math.PI*2);ctx.fill();
+
+  if(gameOver){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff4466';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText('QUANTUM COLLAPSE',W/2,H/2-20);
+    ctx.fillStyle='#fff';ctx.font='16px system-ui';ctx.fillText('Score: '+score,W/2,H/2+15);
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='12px system-ui';ctx.fillText('Tap to restart',W/2,H/2+40)
+  }
+  requestAnimationFrame(render)
+}
+
+c.addEventListener('pointerdown',function(e){e.preventDefault();if(gameOver){score=0;obstacles=[];gameOver=false;speed=3;frame=0;document.getElementById('scoreQR').textContent='0'}else{jumping=true;jumpVel=-8}});
+document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();c.dispatchEvent(new PointerEvent('pointerdown'))}});
+c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();player.x=(e.clientX-r.left)*(W/r.width);player.x=Math.max(20,Math.min(W-20,player.x))});
+
+setInterval(update,1000/60);render();
+</script></body></html>

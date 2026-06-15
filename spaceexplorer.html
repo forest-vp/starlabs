@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Space Explorer — StarLabs</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020812;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;touch-action:none}
+#wrap{width:440px;max-width:100vw;height:100vh;max-height:750px;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;padding:8px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px}
+.hdr-logo{font-size:18px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:inherit;transition:all .2s}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+canvas{flex:1;display:block;width:100%}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">🚀</span><span class="hdr-title">SPACE EXPLORER</span><span style="color:#ffb830;font-size:11px" id="resDisplay">💎 0</span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<canvas id="g"></canvas></div>
+<script>
+(function(){var K="starlabs_xp",G="starlabs_games",B="starlabs_badges";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var c=document.getElementById('g'),ctx=c.getContext('2d'),W=440,H=600;
+c.width=W;c.height=H;
+var ship={x:W/2,y:H/2,vx:0,vy:0,angle:0,fuel:100};
+var planets=[],resources=0,stars=[],thrusting=false,gameOver=false;
+for(var i=0;i<80;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.3,o:.2+Math.random()*.3});
+
+function spawnPlanets(){
+  planets=[];
+  for(var i=0;i<5;i++)planets.push({x:40+Math.random()*(W-80),y:80+Math.random()*(H-160),r:18+Math.random()*25,c:['#ff8c42','#44ccff','#44ff88','#cc44ff','#ffb830'][i],name:['Kepler-7','Nova Prime','Cryos','Nebula X','Helios'][i],mined:false,res:10+Math.floor(Math.random()*20)})
+}
+
+function update(){
+  if(gameOver)return;
+  if(thrusting&&ship.fuel>0){ship.vx+=Math.cos(ship.angle)*0.15;ship.vy+=Math.sin(ship.angle)*0.15;ship.fuel-=0.3}
+  ship.vx*=0.99;ship.vy*=0.99;ship.x+=ship.vx;ship.y+=ship.vy;
+  if(ship.x<10||ship.x>W-10||ship.y<60||ship.y>H-10){gameOver=true;_axp(resources);if(resources>=100)_ub('explorer_rich','Cosmic Tycoon','💎')}
+  planets.forEach(function(p){if(!p.mined){var dx=ship.x-p.x,dy=ship.y-p.y;if(Math.sqrt(dx*dx+dy*dy)<p.r+15){p.mined=true;resources+=p.res;document.getElementById('resDisplay').textContent='💎 '+resources;_axp(p.res);if(resources>=50)_ub('explorer_miner','Asteroid Miner','⛏️')}}})
+  if(planets.every(function(p){return p.mined})){spawnPlanets();ship.fuel=Math.min(100,ship.fuel+30)}
+}
+
+function render(){
+  ctx.fillStyle='#020812';ctx.fillRect(0,0,W,H);
+  stars.forEach(function(s){ctx.fillStyle='rgba(180,210,255,'+s.o+')';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()});
+  // Planets
+  planets.forEach(function(p){if(!p.mined){ctx.fillStyle=p.c;ctx.shadowColor=p.c;ctx.shadowBlur=12;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.arc(p.x-3,p.y-3,p.r*.3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(p.name,p.x,p.y-p.r-10);ctx.fillText('💎'+p.res,p.x,p.y+4)}});
+  // Ship
+  ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.angle);
+  ctx.fillStyle='#44ccff';ctx.shadowColor='#44ccff';ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(-10,-8);ctx.lineTo(-10,8);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
+  if(thrusting&&ship.fuel>0){ctx.fillStyle='#ffb830';ctx.beginPath();ctx.moveTo(-10,-4);ctx.lineTo(-18-Math.random()*5,0);ctx.lineTo(-10,4);ctx.fill()}
+  ctx.restore();
+  // UI
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,30);
+  ctx.fillStyle='#fff';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('⛽ Fuel: '+Math.floor(ship.fuel)+'%',10,20);
+  ctx.textAlign='right';ctx.fillText('💎 '+resources,W-10,20);
+
+  if(gameOver){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ff4466';ctx.font='bold 24px system-ui';ctx.textAlign='center';ctx.fillText('LOST IN SPACE',W/2,H/2-15);ctx.fillStyle='#fff';ctx.font='14px system-ui';ctx.fillText('💎 '+resources+' collected',W/2,H/2+15);ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='11px system-ui';ctx.fillText('Tap to restart',W/2,H/2+38)}
+  requestAnimationFrame(render)
+}
+
+c.addEventListener('pointerdown',function(){if(gameOver){resources=0;ship={x:W/2,y:H/2,vx:0,vy:0,angle:0,fuel:100};gameOver=false;spawnPlanets();document.getElementById('resDisplay').textContent='💎 0'}else thrusting=true});
+c.addEventListener('pointerup',function(){thrusting=false});
+c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;ship.angle=Math.atan2(my-ship.y,mx-ship.x)});
+document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')ship.angle-=0.1;if(e.key==='ArrowRight')ship.angle+=0.1;if(e.key==='ArrowUp')thrusting=true});
+document.addEventListener('keyup',function(e){if(e.key==='ArrowUp')thrusting=false});
+
+spawnPlanets();setInterval(update,1000/60);render();
+</script></body></html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"><title>Code Breaker — StarLabs</title><style>
+:root{--bg:#020812;--gold:#ffb830;--accent:#4da8ff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
+#wrap{width:440px;max-width:100vw;height:100vh;max-height:800px;display:flex;flex-direction:column}
+/* Header */
+.hdr{display:flex;align-items:center;padding:10px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px;backdrop-filter:blur(12px);z-index:10}
+.hdr-logo{font-size:20px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:inherit;transition:all .2s;letter-spacing:1px}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+/* Game */
+.game-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-y:auto}
+.info{text-align:center;margin-bottom:10px}
+.info h2{color:#fff;font-size:18px;margin-bottom:3px}.info p{color:rgba(180,210,240,0.5);font-size:11px}
+/* Guess rows */
+.guesses{flex:1;width:100%;max-width:320px;overflow-y:auto;margin-bottom:12px}
+.guess-row{display:flex;align-items:center;gap:8px;padding:10px;margin:4px 0;background:rgba(10,20,40,0.5);border-radius:10px;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.pegs{display:flex;gap:5px;flex:1}
+.peg{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,0.2)}
+.peg.c0{background:#ff4466}.peg.c1{background:#44ccff}.peg.c2{background:#44ff88}.peg.c3{background:#ffb830}.peg.c4{background:#cc44ff}.peg.c5{background:#ff88cc}
+.hints{display:flex;gap:4px;flex-wrap:wrap;width:50px}
+.hint{width:10px;height:10px;border-radius:50%}.hint.exact{background:#ffb830}.hint.near{background:#fff}.hint.none{background:rgba(255,255,255,0.1)}
+/* Color picker */
+.colors{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.color-btn{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .2s}
+.color-btn:hover,.color-btn.sel{transform:scale(1.15);border-color:#fff}
+.color-btn.c0{background:#ff4466}.color-btn.c1{background:#44ccff}.color-btn.c2{background:#44ff88}.color-btn.c3{background:#ffb830}.color-btn.c4{background:#cc44ff}.color-btn.c5{background:#ff88cc}
+/* Submit */
+.submit-btn{width:100%;max-width:320px;padding:12px;background:linear-gradient(135deg,#ffb830,#e8951a);border:none;border-radius:12px;color:#0a0a0a;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px;transition:all .2s;font-family:inherit;margin-bottom:6px}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,184,48,0.25)}
+.submit-btn:disabled{opacity:0.3;cursor:default;transform:none;box-shadow:none}
+/* Score */
+.score{text-align:center;color:var(--gold);font-size:13px;font-weight:700;margin-bottom:6px}
+/* Win/Lose */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:100}
+.overlay-box{background:rgba(10,20,45,0.95);border:1px solid rgba(60,120,220,0.3);border-radius:18px;padding:30px;text-align:center;max-width:90vw}
+.overlay-box h2{font-size:24px;margin-bottom:10px;letter-spacing:2px}
+.overlay-box p{color:rgba(200,220,255,0.6);font-size:13px;margin-bottom:16px}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">🔐</span><span class="hdr-title">CODE BREAKER</span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<div class="game-area">
+<div class="info"><h2>Code Breaker</h2><p id="levelInfo">Level 1 — Crack the 4-color code in 8 tries</p></div>
+<div class="score">🏆 Score: <span id="scoreDisplay">0</span> | Level <span id="lvlDisplay">1</span></div>
+<div class="guesses" id="guesses"></div>
+<div class="colors" id="picker"></div>
+<div style="display:flex;gap:5px;justify-content:center;margin:6px 0" id="currentGuess"></div>
+<button class="submit-btn" id="submitBtn" disabled>SUBMIT GUESS</button>
+<button class="hdr-btn" onclick="restart()" style="margin-top:4px">↻ New Game</button>
+</div></div>
+<div class="overlay" id="overlay" style="display:none"><div class="overlay-box" id="overlayBox"></div></div>
+<script>
+// ═══ XP ═══
+(function(){var K="starlabs_xp",B="starlabs_badges",G="starlabs_games";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());var w=Math.floor(Math.sqrt(o/100))+1,nw=Math.floor(Math.sqrt(n/100))+1;if(nw>w)window._lvlup=1;return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var COLORS=['#ff4466','#44ccff','#44ff88','#ffb830','#cc44ff','#ff88cc'],CNAMES=['Red','Blue','Green','Gold','Purple','Pink'];
+var DIFFICULTIES=[{len:4,cols:4,tries:8,label:'Easy'},{len:4,cols:5,tries:8,label:'Medium'},{len:5,cols:5,tries:10,label:'Hard'},{len:5,cols:6,tries:10,label:'Expert'}];
+var level=0,score=0,totalWins=0;
+var secret=[],current=[],guesses=[],triesLeft=0,gameOver=false,selectedColor=0;
+
+function init(){
+  var d=DIFFICULTIES[Math.min(level,DIFFICULTIES.length-1)];
+  secret=[];for(var i=0;i<d.len;i++)secret.push(Math.floor(Math.random()*d.cols));
+  current=[];guesses=[];triesLeft=d.tries;gameOver=false;
+  document.getElementById('levelInfo').textContent='Level '+(level+1)+' ('+d.label+') — Crack the '+d.len+'-color code in '+d.tries+' tries';
+  document.getElementById('scoreDisplay').textContent=score;
+  document.getElementById('lvlDisplay').textContent=level+1;
+  document.getElementById('guesses').innerHTML='';
+  document.getElementById('overlay').style.display='none';
+  renderPicker();renderCurrent();updateSubmit();
+}
+
+function renderPicker(){
+  var d=DIFFICULTIES[Math.min(level,DIFFICULTIES.length-1)],p=document.getElementById('picker');p.innerHTML='';
+  for(var i=0;i<d.cols;i++){var b=document.createElement('div');b.className='color-btn c'+i+(i===selectedColor?' sel':'');b.onclick=(function(c){return function(){selectedColor=c;renderPicker()}})(i);p.appendChild(b)}
+}
+
+function renderCurrent(){
+  var c=document.getElementById('currentGuess'),d=DIFFICULTIES[Math.min(level,DIFFICULTIES.length-1)];c.innerHTML='';
+  for(var i=0;i<d.len;i++){var peg=document.createElement('div');peg.className='peg'+(i<current.length?' c'+current[i]:'');peg.style.cssText='width:28px;height:28px';if(!gameOver)peg.onclick=(function(idx){return function(){if(current.length>idx)current.splice(idx,1);renderCurrent();updateSubmit()}})(i);c.appendChild(peg)}
+  if(!gameOver&&current.length<d.len){var add=document.createElement('div');add.className='peg';add.style.cssText='width:28px;height:28px;border:2px dashed rgba(255,255,255,0.3)';add.onclick=function(){current.push(selectedColor);renderCurrent();updateSubmit()};c.appendChild(add)}
+}
+
+function updateSubmit(){var d=DIFFICULTIES[Math.min(level,DIFFICULTIES.length-1)];document.getElementById('submitBtn').disabled=current.length!==d.len||gameOver}
+
+function submit(){
+  if(gameOver||current.length!==DIFFICULTIES[Math.min(level,DIFFICULTIES.length-1)].len)return;
+  var exact=0,near=0,tempS=[],tempC=[];
+  for(var i=0;i<secret.length;i++){if(current[i]===secret[i])exact++;else{tempS.push(secret[i]);tempC.push(current[i])}}
+  for(var i=0;i<tempC.length;i++){var idx=tempS.indexOf(tempC[i]);if(idx!==-1){near++;tempS.splice(idx,1)}}
+  guesses.push({code:[].concat(current),exact:exact,near:near});triesLeft--;
+  // Render
+  var g=document.getElementById('guesses'),row=document.createElement('div');row.className='guess-row';
+  var pegs=document.createElement('div');pegs.className='pegs';
+  current.forEach(function(c){var p=document.createElement('div');p.className='peg c'+c;pegs.appendChild(p)});row.appendChild(pegs);
+  var hints=document.createElement('div');hints.className='hints';
+  for(var i=0;i<exact;i++){var h=document.createElement('div');h.className='hint exact';hints.appendChild(h)}
+  for(var i=0;i<near;i++){var h=document.createElement('div');h.className='hint near';hints.appendChild(h)}
+  row.appendChild(hints);g.appendChild(row);g.scrollTop=g.scrollHeight;
+  current=[];renderCurrent();updateSubmit();
+
+  if(exact===secret.length){win();return}
+  if(triesLeft<=0){lose();return}
+}
+
+function win(){
+  gameOver=true;totalWins++;score+=(triesLeft+1)*10*level||10;_axp(20+level*5);
+  if(totalWins>=5)_ub('codebreaker_master','Master Cracker','🔐');
+  level++;if(totalWins%3===0)_ub('codebreaker_pro','Code Pro','🔓');
+  var b=document.getElementById('overlayBox');b.innerHTML='<h2 style="color:#44ff88">🎉 CODE CRACKED!</h2><p>You broke the code in '+(DIFFICULTIES[Math.min(level-1,DIFFICULTIES.length-1)].tries-triesLeft)+' tries!</p><p style="color:var(--gold)">Score: '+score+' | Level '+(level)+'</p><button class="submit-btn" onclick="init()">NEXT CODE</button>';
+  document.getElementById('overlay').style.display='flex'
+}
+
+function lose(){
+  gameOver=true;level=Math.max(0,level-1);_axp(5);
+  var b=document.getElementById('overlayBox'),d=DIFFICULTIES[Math.min(Math.max(0,level-1),DIFFICULTIES.length-1)];
+  b.innerHTML='<h2 style="color:#ff4466">❌ ACCESS DENIED</h2><p>The code was: <b>'+secret.map(function(s){return CNAMES[s]}).join(' • ')+'</b></p><p style="color:rgba(200,220,255,0.5)">Level decreased to '+(Math.max(1,level))+'</p><button class="submit-btn" onclick="init()">RETRY</button>';
+  document.getElementById('overlay').style.display='flex'
+}
+
+function restart(){level=0;score=0;totalWins=0;init()}
+
+document.getElementById('submitBtn').addEventListener('click',submit);
+document.addEventListener('keydown',function(e){if(e.key>='1'&&e.key<='6'){selectedColor=parseInt(e.key)-1;renderPicker()}if(e.key==='Enter')submit();if(e.key==='Backspace'&&current.length>0){current.pop();renderCurrent();updateSubmit()}});
+init();
+</script></body></html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Hack Sim — StarLabs</title><style>
+:root{--bg:#020812;--gold:#ffb830;--accent:#4da8ff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Courier New',monospace;overflow:hidden;touch-action:none}
+#wrap{width:500px;max-width:100vw;height:100vh;max-height:800px;display:flex;flex-direction:column;background:rgba(4,10,24,0.95)}
+.hdr{display:flex;align-items:center;padding:10px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px;backdrop-filter:blur(12px)}
+.hdr-logo{font-size:18px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;font-family:'Segoe UI',system-ui,sans-serif;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:'Segoe UI',system-ui,sans-serif;transition:all .2s}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+.terminal{flex:1;padding:16px;overflow-y:auto;color:#44ff88;font-size:13px;line-height:1.6}
+.terminal .line{margin-bottom:2px}.terminal .prompt{color:var(--accent)}.terminal .error{color:#ff4466}.terminal .success{color:#44ff88}.terminal .info{color:rgba(180,210,240,0.6)}.terminal .gold{color:var(--gold)}
+.input-line{display:flex;align-items:center;padding:8px 16px;background:rgba(0,0,0,0.4);border-top:1px solid rgba(60,120,220,0.15)}
+.input-line .prompt{color:var(--accent);margin-right:8px;font-weight:700}
+.input-line input{flex:1;background:none;border:none;color:#44ff88;font-family:inherit;font-size:13px;outline:none;caret-color:#44ff88}
+.score-line{display:flex;justify-content:space-between;padding:8px 16px;font-family:'Segoe UI',system-ui,sans-serif;font-size:11px;color:rgba(180,210,240,0.4);border-top:1px solid rgba(60,120,220,0.08)}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">💻</span><span class="hdr-title">HACK SIM</span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<div class="terminal" id="term"></div>
+<div class="score-line"><span id="missionInfo">Mission 1/8</span><span>🏆 <span id="scoreHack">0</span></span></div>
+<div class="input-line"><span class="prompt">root@starlabs:~$</span><input id="cmd" placeholder="type help..." autofocus></div>
+</div>
+<script>
+(function(){var K="starlabs_xp",G="starlabs_games",B="starlabs_badges";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var missions=[{id:'firewall',text:'Breach the firewall. Use: scan → exploit → access',cmds:{scan:{resp:'Scanning... Port 22 OPEN | Port 443 OPEN | Port 8080 FILTERED',next:'exploit'},exploit:{resp:'Exploiting SSH vulnerability... ACCESS GRANTED. Firewall bypassed.',next:'access'},access:{resp:'Root shell obtained. Mission complete.',done:true}},score:100},{id:'decrypt',text:'Decrypt the file. Use: analyze → crack → extract',cmds:{analyze:{resp:'File analysis: AES-256 encryption detected. Key hint: "starlabs"',next:'crack'},crack:{resp:'Brute forcing with dictionary... KEY FOUND: s7@rL@bs',next:'extract'},extract:{resp:'File decrypted. Contents: PROJECT_NEBULA_STATUS=ACTIVE',done:true}},score:150},{id:'trace',text:'Trace the intruder. Use: logs → trace → block',cmds:{logs:{resp:'Access logs: 103.45.xxx.xxx — 47 attempts at 03:47 AM',next:'trace'},trace:{resp:'Tracing IP... Origin: rival-corp HQ, Sector 7',next:'block'},block:{resp:'IP blocked. Firewall rules updated. Intruder neutralized.',done:true}},score:200}];
+
+var currentMission=0,score=0,step=null,completed=[];
+
+function print(text,cls){var t=document.getElementById('term'),l=document.createElement('div');l.className='line'+(cls?' '+cls:'');l.textContent=text;t.appendChild(l);t.scrollTop=t.scrollHeight}
+
+function runCmd(cmd){
+  cmd=cmd.trim().toLowerCase();
+  print('root@starlabs:~$ '+cmd,'prompt');
+  if(cmd==='help'){print('Available commands: scan | exploit | access | analyze | crack | extract | logs | trace | block | help | clear | missions','info');return}
+  if(cmd==='clear'){document.getElementById('term').innerHTML='';return}
+  if(cmd==='missions'){print('Active missions: '+(completed.length+1)+'/'+missions.length,'info');return}
+  
+  var m=missions[currentMission];
+  if(m.cmds[cmd]){
+    print(m.cmds[cmd].resp,'success');
+    if(m.cmds[cmd].done){
+      completed.push(currentMission);score+=m.score;_axp(25);
+      print('MISSION COMPLETE! +'+m.score+' points','gold');
+      currentMission++;
+      if(currentMission>=missions.length){currentMission=0;_ub('hack_veteran','Elite Hacker','💻');print('ALL MISSIONS COMPLETE! Cycle restarting.','gold')}
+      document.getElementById('missionInfo').textContent='Mission '+(currentMission+1)+'/'+missions.length;
+      var nm=missions[currentMission];print(nm.text,'info');
+    }
+    step=m.cmds[cmd].next;
+  }else{print('Unknown command: '+cmd+'. Type help for commands.','error')}
+  document.getElementById('scoreHack').textContent=score;
+}
+
+document.getElementById('cmd').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){runCmd(this.value);this.value=''}
+});
+
+print('STARLABS HACK SIM v2.0','info');
+print('Type help for commands.','info');
+print(missions[currentMission].text,'info');
+</script></body></html>

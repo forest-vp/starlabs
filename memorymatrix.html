@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Memory Matrix — StarLabs</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020812;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;touch-action:none}
+#wrap{width:440px;max-width:100vw;height:100vh;max-height:750px;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;padding:8px 14px;background:rgba(8,16,36,0.95);border-bottom:1px solid rgba(60,120,220,0.15);gap:10px}
+.hdr-logo{font-size:18px}.hdr-title{color:#fff;font-size:13px;font-weight:700;flex:1;letter-spacing:1px}
+.hdr-btn{color:rgba(180,210,255,0.5);font-size:11px;cursor:pointer;padding:6px 12px;border-radius:16px;border:1px solid rgba(60,120,220,0.2);background:rgba(10,20,40,0.6);font-family:inherit;transition:all .2s}
+.hdr-btn:hover{color:#fff;border-color:rgba(100,160,240,0.5)}
+.game-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.grid{display:grid;gap:8px;margin:10px auto}
+.card{aspect-ratio:1;border-radius:12px;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(15,25,50,0.8);border:2px solid rgba(60,120,220,0.2)}
+.card.flipped,.card.matched{background:rgba(30,50,90,0.9);border-color:rgba(100,160,240,0.5);box-shadow:0 0 15px rgba(77,168,255,0.2)}
+.card.matched{background:rgba(68,255,136,0.15);border-color:#44ff88}
+.info{text-align:center;color:rgba(200,220,255,0.6);font-size:12px;margin:6px 0}
+.score{color:#ffb830;font-size:16px;font-weight:700}
+</style></head><body>
+<div id="wrap">
+<div class="hdr"><span class="hdr-logo">🧠</span><span class="hdr-title">MEMORY MATRIX</span><span class="score">🏆 <span id="scoreMM">0</span></span><button class="hdr-btn" onclick="location.href='index.html'">◂ MENU</button></div>
+<div class="game-area">
+<div class="info" id="levelInfo">Level 1 — Match the pairs</div>
+<div class="grid" id="cardGrid"></div>
+<div class="info">Moves: <span id="moves">0</span> | Pairs: <span id="pairs">0</span>/<span id="totalPairs">0</span></div>
+<button class="hdr-btn" onclick="newGame()" style="margin-top:8px">↻ New Game</button>
+</div></div>
+<script>
+(function(){var K="starlabs_xp",G="starlabs_games",B="starlabs_badges";localStorage.setItem(G,(parseInt(localStorage.getItem(G)||"0")+1).toString());
+window._axp=function(a){var o=parseInt(localStorage.getItem(K)||"0"),n=o+a;localStorage.setItem(K,n.toString());return n};
+window._ub=function(id,nm,ic){var bs=JSON.parse(localStorage.getItem(B)||"[]");if(bs.find(function(x){return x.id===id}))return 0;bs.push({id:id,name:nm,icon:ic,date:Date.now()});localStorage.setItem(B,JSON.stringify(bs));return 1}})();
+
+var ICONS=['🚀','⭐','🔮','💎','🛸','🌍','⚡','🧬','🎯','🔬'];
+var level=1,cols=4,pairs=4,moves=0,matched=0,cards=[],flipped=[],locked=false,score=0;
+
+function newGame(){
+  cols=level<=2?4:level<=4?4:6;pairs=level<=2?4:level<=4?6:9;
+  var icons=ICONS.slice(0,pairs),deck=[];
+  icons.forEach(function(ic){deck.push(ic);deck.push(ic)});
+  for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=deck[i];deck[i]=deck[j];deck[j]=t}
+  cards=deck;flipped=[];matched=0;moves=0;locked=false;
+  document.getElementById('levelInfo').textContent='Level '+level+' — '+pairs+' pairs';
+  document.getElementById('scoreMM').textContent=score;
+  document.getElementById('moves').textContent='0';
+  document.getElementById('pairs').textContent='0';
+  document.getElementById('totalPairs').textContent=pairs;
+  renderGrid()
+}
+
+function renderGrid(){
+  var g=document.getElementById('cardGrid');g.innerHTML='';g.style.gridTemplateColumns='repeat('+cols+',70px)';
+  cards.forEach(function(c,i){
+    var div=document.createElement('div');div.className='card';div.dataset.idx=i;
+    if(flipped.includes(i)||matched.includes(i)){div.classList.add('flipped');div.textContent=c}
+    if(matched.includes(i))div.classList.add('matched');
+    div.addEventListener('click',function(){flip(i)});g.appendChild(div)
+  })
+}
+
+function flip(idx){
+  if(locked||flipped.includes(idx)||matched.includes(idx))return;
+  flipped.push(idx);renderGrid();
+  if(flipped.length===2){
+    locked=true;moves++;document.getElementById('moves').textContent=moves;
+    if(cards[flipped[0]]===cards[flipped[1]]){
+      matched.push(flipped[0]);matched.push(flipped[1]);flipped=[];locked=false;_axp(5);
+      document.getElementById('pairs').textContent=matched.length/2;
+      if(matched.length===cards.length){score+=pairs*10;document.getElementById('scoreMM').textContent=score;level++;_axp(20);if(level>=5)_ub('memory_genius','Matrix Master','🧠');setTimeout(newGame,800)}
+    }else setTimeout(function(){flipped=[];locked=false;renderGrid()},600)
+  }
+}
+
+newGame();
+</script></body></html>
